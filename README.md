@@ -1,4 +1,4 @@
-# Dinner Deck
+# Supper Swipe
 
 Swipe through the dinners we like, filter by what's in the kitchen, and keep the scores in one place.
 

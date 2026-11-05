@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dinner-deck",
+      "name": "supper-swipe",
       "runtimeExecutable": "node",
       "runtimeArgs": ["scripts/dev.mjs"],
       "port": 8776

@@ -4,7 +4,7 @@ import { handle } from '../../lib/dishes.mjs';
 import base from '../../data/recipes.json';
 
 export default async req => {
-  const store = getStore({ name: 'dinner-deck', consistency: 'strong' });
+  const store = getStore({ name: 'supper-swipe', consistency: 'strong' });
   const path = new URL(req.url).pathname.replace(/^\/api\/dishes/, '').replace(/\/$/, '');
   return handle(req, path, base, store, randomUUID);
 };
