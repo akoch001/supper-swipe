@@ -374,6 +374,8 @@
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(10000)
     });
+    // The site's password has lapsed: reload to show its prompt, unless that would lose a form being typed.
+    if (res.status === 401 && $('adder').hidden) location.reload();
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
