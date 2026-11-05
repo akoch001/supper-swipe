@@ -33,3 +33,7 @@ Each dish is a poster in the colour of its main ingredient (pink for dishes stil
 `icons/icon.svg` is the home-screen icon. The two PNGs are that file rendered at 192 and 512 pixels.
 
 The site sits behind Netlify's site-wide password, which also covers `/api`. The API has no login of its own.
+
+## Reading a recipe with AI
+
+When a link has no recipe data, or you pick a PDF or photo in the Add a dish form, an AI model reads it and fills in the form for you to check. It needs `ANTHROPIC_API_KEY` set in Netlify's environment variables. Without one, the form says AI reading is not switched on and everything else works as before. Each reading is paid for on that API account, so set a monthly spending limit there. The model is named in `lib/reader.mjs`. The work runs in a background function, `netlify/functions/read-recipe.mjs`, because it can outlast a normal request.

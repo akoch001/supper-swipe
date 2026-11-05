@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/dishes.test.mjs tests/shopping.test.mjs"
+    "test": "node --test tests/dishes.test.mjs tests/shopping.test.mjs tests/reader.test.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
     "@netlify/blobs": "11.1.5"
   }
 }

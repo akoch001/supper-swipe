@@ -111,7 +111,9 @@
       <div class="field">
         <label for="f-link">Link to the recipe</label>
         <div class="link-row"><input id="f-link" inputmode="url" autocomplete="off" autocapitalize="off"><button type="button" class="primary" id="getRecipe"><svg class="ic" aria-hidden="true"><use href="#i-sparkle"/></svg>Get recipe</button></div>
-        <small id="linkNote" role="status">Paste a link and the recipe fills in below for you to check. No link? Just type it in.</small>
+        <button type="button" class="ghost" id="getFile"><svg class="ic" aria-hidden="true"><use href="#i-sparkle"/></svg>Read a PDF or photo</button>
+        <input type="file" id="f-file" accept="application/pdf,image/*" hidden>
+        <small id="linkNote" role="status">Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.</small>
       </div>
       <div class="field"><label for="f-title">Name</label><input id="f-title" required></div>
       <div class="field"><label for="f-shop">Ingredients</label><textarea id="f-shop" rows="6"></textarea><small>One per line.</small></div>

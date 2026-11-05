@@ -586,7 +586,7 @@
     $('formTitle').textContent = editId ? 'Edit dish' : 'Add a dish';
     $('saveBtn').textContent = editId ? 'Save changes' : 'Save dish';
     $('getRecipe').hidden = !!editId;
-    $('linkNote').hidden = !!editId;
+    $('linkNote').hidden = $('getFile').hidden = !!editId;
     shopOpen = !!s.shop;
     $('adder').hidden = !s.add;
     $('panelSwipe').hidden = tab !== 'swipe';
@@ -730,12 +730,12 @@
     card.addEventListener('click', () => { if (!moved && card.isConnected && card.parentNode === $('stack')) openRecipe(card.dataset.id, card); });
   }
 
-  async function api(path, method, body) {
+  async function api(path, method, body, ms) {
     const res = await fetch('/api/dishes' + path, {
       method: method || 'GET',
       headers: body ? { 'content-type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(ms || 10000)
     });
     // The site's password has lapsed: reload to show its prompt, unless that would lose a form being typed.
     if (res.status === 401 && $('adder').hidden) location.reload();
@@ -978,7 +978,7 @@
   function openAdder() {
     fillForm({});
     $('moreDetails').open = false;
-    $('linkNote').textContent = 'Paste a link and the recipe fills in below for you to check. No link? Just type it in.';
+    $('linkNote').textContent = 'Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.';
     go({ tab, add: true });
     $('f-link').focus({ preventScroll: true });
   }
@@ -999,29 +999,94 @@
       return '';
     }
   }
+  function fillFromRecipe(recipe) {
+    $('f-title').value = recipe.title;
+    $('f-shop').value = list(recipe.shopping).join('\n');
+    $('f-steps').value = list(recipe.steps).join('\n');
+    $('f-blurb').value = recipe.blurb || '';
+    $('f-minutes').value = recipe.minutes || '';
+    $('f-serves').value = recipe.serves || '';
+    $('f-hands').value = recipe.handsOn || '';
+    $('f-kit').value = recipe.kit || '';
+    $('f-tags').value = list(recipe.tags).join(', ');
+    importedSource = recipe.source || '';
+    $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
+  }
+  const busyReading = on => { $('getRecipe').disabled = $('getFile').disabled = on; };
+  // Hands the work to the AI reader, then asks every two seconds how it went. Returns null if the form moved on.
+  async function readWithAI(payload, run) {
+    const { id } = await api('/read', 'POST', payload, 90000);
+    const started = await fetch('/api/read-recipe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
+    if (!started.ok) throw new Error('Could not start reading');
+    for (let i = 0; i < 90; i++) {
+      await new Promise(done => setTimeout(done, 2000));
+      if (run !== formRun) return null;
+      const job = await api('/read/' + id).catch(() => null); // a dropped connection is not a failed reading
+      if (job && job.status === 'done') return job.recipe;
+      if (job && job.status !== 'reading') throw new Error(job.status);
+    }
+    throw new Error('Took too long');
+  }
   $('getRecipe').addEventListener('click', async () => {
     const url = linkIn($('f-link').value);
     if (!url) { $('linkNote').textContent = 'Paste a full link first, starting with https://'; return; }
     $('f-link').value = url;
-    $('getRecipe').disabled = true;
+    busyReading(true);
     $('linkNote').textContent = 'Reading the recipe.';
     const run = formRun;
     try {
-      const { recipe } = await api('/import', 'POST', { url });
-      // The form may have been closed and reopened for another dish while the site was answering.
-      if (run !== formRun) return;
-      $('f-title').value = recipe.title;
-      $('f-shop').value = list(recipe.shopping).join('\n');
-      $('f-steps').value = list(recipe.steps).join('\n');
-      $('f-blurb').value = recipe.blurb || '';
-      $('f-minutes').value = recipe.minutes || '';
-      $('f-serves').value = recipe.serves || '';
-      importedSource = recipe.source || '';
-      $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
+      let recipe;
+      try {
+        recipe = (await api('/import', 'POST', { url })).recipe;
+      } catch (err) {
+        // The form may have been closed and reopened for another dish while the site was answering.
+        if (run !== formRun) return;
+        $('linkNote').textContent = 'That page needs the AI reader. This can take a minute.';
+        recipe = await readWithAI({ url }, run);
+      }
+      if (run === formRun && recipe) fillFromRecipe(recipe);
     } catch (err) {
       if (run === formRun) $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
     } finally {
-      $('getRecipe').disabled = false;
+      busyReading(false);
+    }
+  });
+  const MAX_FILE_BYTES = 4000000, MAX_PHOTO_SIDE = 2000;
+  const asBase64 = file => new Promise((done, fail) => {
+    const reader = new FileReader();
+    reader.onload = () => done(String(reader.result).split(',')[1]);
+    reader.onerror = () => fail(reader.error);
+    reader.readAsDataURL(file);
+  });
+  // Phone photos are far bigger than a recipe needs.
+  async function shrinkPhoto(file) {
+    const image = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.width * scale);
+    canvas.height = Math.round(image.height * scale);
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', .85).split(',')[1];
+  }
+  $('getFile').addEventListener('click', () => $('f-file').click());
+  $('f-file').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const isPdf = file.type === 'application/pdf';
+    if (isPdf && file.size > MAX_FILE_BYTES) { $('linkNote').textContent = 'That PDF is over 4 MB, too big to read here. A photo of the recipe would work.'; return; }
+    busyReading(true);
+    $('linkNote').textContent = 'Reading the recipe with AI. This can take a minute.';
+    const run = formRun;
+    try {
+      const recipe = await readWithAI(isPdf ? { type: file.type, data: await asBase64(file) } : { type: 'image/jpeg', data: await shrinkPhoto(file) }, run);
+      if (run === formRun && recipe) fillFromRecipe(recipe);
+    } catch (err) {
+      if (run !== formRun) return;
+      $('linkNote').textContent = err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
+        : err.message === 'AI reading is not switched on' ? 'AI reading is not switched on yet.' : 'That file could not be read. Try again, or type it in.';
+    } finally {
+      busyReading(false);
     }
   });
   $('formRate').addEventListener('click', e => {
