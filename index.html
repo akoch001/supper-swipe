@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Dinner Deck</title>
+<meta name="theme-color" content="#7a2e5d">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dinner Deck">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Dinner Deck</h1>
+    <button class="ghost" id="addBtn" type="button">Add a dish</button>
+  </header>
+
+  <section class="filter" aria-label="Filter dishes">
+    <div class="seg">
+      <button type="button" id="modeAll" aria-pressed="true">All dishes</button>
+      <button type="button" id="modeHave" aria-pressed="false">What we have</button>
+    </div>
+    <div class="chips" id="chips" hidden></div>
+    <div class="count-row">
+      <p class="count" id="count" aria-live="polite"></p>
+      <button type="button" class="chip" id="easyBtn" aria-pressed="false">Easy only</button>
+    </div>
+  </section>
+
+  <main class="stack" id="stack"></main>
+
+  <div class="actions">
+    <button type="button" class="back" id="backBtn" aria-label="Back to the previous dish">Back</button>
+    <button type="button" class="no" id="noBtn">Not tonight</button>
+    <button type="button" class="yes" id="yesBtn">Yes please</button>
+  </div>
+</div>
+
+<div class="sheet" id="recipe" hidden></div>
+
+<div class="sheet" id="adder" hidden>
+  <form class="sheet-in" id="addForm">
+    <div class="sheet-actions"><button type="button" class="ghost" id="addClose">Close</button></div>
+    <h2>Add a dish</h2>
+    <div class="field"><label for="f-title">Name</label><input id="f-title" required></div>
+    <div class="field"><label for="f-blurb">One line about it</label><input id="f-blurb"></div>
+    <div class="field"><label for="f-minutes">Minutes to make</label><input id="f-minutes" type="number" min="1" inputmode="numeric"></div>
+    <div class="field"><label for="f-hands">Minutes hands-on</label><input id="f-hands" type="number" min="1" inputmode="numeric"><small>Time you are actually busy. Oven time does not count.</small></div>
+    <div class="field"><label for="f-kit">Washing up</label><input id="f-kit"><small>For example: 1 frying pan, 1 oven dish.</small></div>
+    <div class="field"><label for="f-core">Core ingredients</label><input id="f-core"><small>Separate with commas, for example: chicken, rice. These drive the "What we have" filter.</small></div>
+    <div class="field"><label for="f-tags">Tags</label><input id="f-tags"><small>Optional, for example: healthy, vegetarian.</small></div>
+    <div class="field"><label for="f-shop">Ingredients</label><textarea id="f-shop" rows="6"></textarea><small>One per line.</small></div>
+    <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line.</small></div>
+    <div class="sheet-actions"><button type="submit" class="primary">Save dish</button></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

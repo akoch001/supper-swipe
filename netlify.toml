@@ -1,0 +1,13 @@
+[build]
+  # Publish only the files the page loads. Recipes reach the page through the function.
+  command = "npm test && rm -rf _site && mkdir -p _site/icons && cp index.html app.js styles.css manifest.webmanifest robots.txt _site/ && cp icons/*.png _site/icons/"
+  publish = "_site"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Public but unlisted: anyone with the link can open it, search engines can't list it.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

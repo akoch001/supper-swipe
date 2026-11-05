@@ -1,0 +1,19 @@
+# Dinner Deck
+
+Swipe through the dinners we like, filter by what's in the kitchen, and keep the scores in one place.
+
+- `index.html`, `app.js`, `styles.css`: the page, with no build step.
+- `data/recipes.json`: recipe text and starting scores. Editing it and pushing updates the deck, but scores saved in the app take priority.
+- `netlify/functions/dishes.mjs` and `lib/dishes.mjs`: `/api/dishes`, which saves scores and added dishes in Netlify Blobs. The last save wins.
+- `npm test` checks the saving rules and runs on every deploy.
+
+## Starting ease score
+
+Start at 5 and take off points. Oven and simmering time cost nothing.
+
+- Pans and equipment: 2 = 1, 3 = 2, 4 or more = 3. Three mixing bowls count as one pan.
+- Hands-on time: over 20 minutes = 1, over 40 minutes = 2.
+- More than 10 ingredients = 1.
+- Anything hard to find = 1.
+
+The lowest score is 1. Anyone can change a score in the app.
