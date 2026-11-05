@@ -1012,7 +1012,17 @@
     importedSource = recipe.source || '';
     $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
   }
-  const busyReading = on => { $('getRecipe').disabled = $('getFile').disabled = on; };
+  // No one can say how far along the model is, so the bar just creeps towards the end until the answer arrives.
+  const busyReading = on => {
+    $('getRecipe').disabled = $('getFile').disabled = on;
+    const bar = $('readBar');
+    bar.hidden = !on;
+    bar.classList.remove('go');
+    if (on) {
+      void bar.offsetWidth;
+      bar.classList.add('go');
+    }
+  };
   // Hands the work to the AI reader, then asks every two seconds how it went. Returns null if the form moved on.
   async function readWithAI(payload, run) {
     const { id } = await api('/read', 'POST', payload, 90000);
