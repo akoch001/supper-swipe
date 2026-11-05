@@ -132,7 +132,7 @@
     if (easyOnly && !((r.ease || 0) >= 3)) return false;
     if (lexiOnly && !r.lexi) return false;
     if (list(r.tags).includes('dessert') && !(mode === 'have' && have.has('dessert'))) return false;
-    return mode === 'all' || [...have].every(t => terms(r).includes(t));
+    return mode === 'all' || !have.size || [...have].some(t => terms(r).includes(t));
   };
   const shuffle = a => {
     const out = a.slice();
@@ -219,7 +219,7 @@
     if (!loaded && !failed) empty = emptyHTML('🍳', 'Shuffling the deck', 'Fetching your dishes.', '', true);
     else if (failed) empty = emptyHTML('📡', 'Your dishes are out of reach', esc(failed), '<button type="button" class="primary" data-act="retry">Try again</button>');
     else if (!recipes.size) empty = emptyHTML('🍽️', 'No dishes yet', 'Add your first favourite and it will appear here as a card.', '<button type="button" class="primary" data-act="add">' + ic('plus') + 'Add a dish</button>');
-    else if (![...recipes.values()].some(matches)) empty = emptyHTML('🔍', 'Nothing fits all of that', 'Turn a filter off to see more dishes.');
+    else if (![...recipes.values()].some(matches)) empty = emptyHTML('🔍', 'Nothing fits all of that', 'Change a filter to see more dishes.');
     else if (!queue.length && shortlist.length) {
       const more = passed.some(id => !shortlist.includes(id));
       empty = emptyHTML('🎉', 'Time to choose', 'You have ' + shortlist.length + ' on your shortlist.', '<button type="button" class="primary" data-act="list">See your shortlist</button>' + (more ? '<button type="button" class="quiet" data-act="again">Swipe the rest again</button>' : ''));
@@ -248,8 +248,8 @@
     const n = [...recipes.values()].filter(matches).length;
     let label = '';
     if (loaded) {
-      if (mode === 'have' && !have.size) label = 'Tap what you have. Dishes must use everything you tap.';
-      else if (mode === 'have') label = n + ' of ' + recipes.size + ' dishes use ' + [...have].join(' and ');
+      if (mode === 'have' && !have.size) label = 'Tap what you have. Dishes using any of it stay in.';
+      else if (mode === 'have') label = n + ' of ' + recipes.size + ' dishes use ' + [...have].join(' or ');
       else label = n + (n === 1 ? ' dish' : ' dishes') + ' in the deck';
     }
     $('count').textContent = label;
