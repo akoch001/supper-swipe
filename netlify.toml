@@ -6,7 +6,8 @@
 [functions]
   node_bundler = "esbuild"
 
-# Public but unlisted: anyone with the link can open it, search engines can't list it.
+# Private: Netlify's site-wide password covers every path, including /api. The API has no login
+# of its own, so the password must stay on. Search engines are told to stay away as well.
 [[headers]]
   for = "/*"
   [headers.values]

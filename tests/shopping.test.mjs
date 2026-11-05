@@ -83,6 +83,43 @@ test('marks WhatsApp headings only when asked', () => {
   assert.equal(Shopping.toText(aisles, '*'), '*Dairy and eggs*\n- Eggs: 2');
 });
 
+test('reads the wordings recipe sites use', () => {
+  assert.deepEqual(read('900ml chicken or vegetable stock'), [['Chicken stock', 'tins', 900, 'ml']]);
+  assert.deepEqual(read('1 tbsp olive or rapeseed oil')[0].slice(0, 2), ['Olive oil', 'sauces']);
+  assert.deepEqual(read('180ml cream or coconut milk'), [['Cream', 'dairy', 180, 'ml']]);
+  assert.deepEqual(read('1 to 1½ pounds chicken thighs'), [['Chicken thighs', 'meat', 681, 'g']]);
+  assert.deepEqual(read('2–3 tbsp olive oil'), [['Olive oil', 'sauces', 9, 'tsp']]);
+  assert.deepEqual(read('1.2 litres vegetable stock'), [['Vegetable stock', 'tins', 1200, 'ml']]);
+  assert.deepEqual(read('2 heaped tablespoons crunchy peanut butter'), [['Peanut butter', 'tins', 6, 'tsp']]);
+  assert.deepEqual(read('1 garlic bulb'), [['Garlic', 'veg', 10, 'clove']]);
+  assert.deepEqual(read('Juice of 2 limes'), [['Limes', 'veg', 2, '']]);
+  assert.deepEqual(read('Zest and juice of 1 lemon'), [['Lemons', 'veg', 1, '']]);
+  assert.deepEqual(read('60ml lemon juice').map(p => [p[0], Math.round(p[2] * 10) / 10]), [['Lemons', 1.3]]);
+  assert.deepEqual(read('Lemon juice, to taste'), [['Lemons', 'veg', null, '']]);
+  assert.deepEqual(read('Salt and pepper, to taste').map(p => p[0]), ['Salt', 'Black pepper']);
+  assert.deepEqual(read('1/2 tsp pepper')[0].slice(0, 2), ['Black pepper', 'spices']);
+  assert.deepEqual(read('2 red peppers, sliced')[0].slice(0, 2), ['Peppers', 'veg']);
+  assert.deepEqual(read('Coriander, mint and basil, to serve').map(p => p[0]), ['Coriander', 'Mint', 'Basil']);
+  for (const [line, name] of [['4 green onions', 'Spring onions'], ['2 tbsp rice vinegar', 'Rice vinegar'], ['1 tsp garlic powder', 'Garlic powder'], ['2 cups beef broth', 'Beef stock'],
+    ['400g butter beans', 'Butter beans'], ['2 x 145g tins tuna in olive oil', 'Tuna'], ['2 tbsp tomato purée', 'Tomato paste']]) assert.equal(read(line)[0][0], name, line);
+  assert.equal(Shopping.parseLine('1 red chilli, optional')[0].optional, true);
+});
+
+test('shows part cups, and says when some of an ingredient has no amount', () => {
+  const aisles = Shopping.build([
+    { title: 'A', shopping: ['1/4 cup soy sauce', '1 1/2 cups orzo', 'Rice, to serve'], factor: 1 },
+    { title: 'B', shopping: ['300g rice'], factor: 1 }
+  ]);
+  assert.equal(find(aisles, 'Soy sauce').amount, '0.25 cups');
+  assert.equal(find(aisles, 'Orzo').amount, '1.5 cups');
+  assert.equal(find(aisles, 'Rice').amount, '300 g + some');
+});
+
+test('main ingredients: mince counts as its meat, a spoon of egg white does not count as eggs', () => {
+  assert.deepEqual(Shopping.mainsOf(['500g pork mince', '1 tbsp egg white', '200g rice']), ['pork', 'rice']);
+  assert.deepEqual(Shopping.mainsOf(['2 eggs', 'Salt and pepper, to taste']), ['eggs']);
+});
+
 test('reads servings written in words', () => {
   assert.equal(Shopping.servesOf({ serves: 'about 8' }), 8);
   assert.equal(Shopping.servesOf({ serves: '4 as a side, 2 as a main' }), 4);

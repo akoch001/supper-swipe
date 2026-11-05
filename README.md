@@ -2,7 +2,7 @@
 
 Swipe through the dinners we like, filter by what's in the kitchen, and keep the scores in one place.
 
-- `index.html`, `app.js`, `styles.css`: the page, with no build step.
+- `index.html`, `app.js`, `styles.css`, `shopping.js`: the page, with no build step.
 - `data/recipes.json`: recipe text and starting scores. Editing it and pushing updates the deck, but scores saved in the app take priority.
 - `netlify/functions/dishes.mjs` and `lib/dishes.mjs`: `/api/dishes`, which saves scores and added dishes in Netlify Blobs. The last save wins.
 - `npm test` checks the saving rules and runs on every deploy.
@@ -25,3 +25,11 @@ The shortlist and the number of people per dish are kept per phone in the browse
 ## Adding and editing dishes
 
 "Get recipe" sends the link to `/api/dishes/import`, which reads the schema.org recipe data on the page (`lib/import.mjs`) and fills in the form. Nothing is saved until the form is. Any field can be edited; edits are stored like scores, field by field, and override `data/recipes.json`. The main ingredients are worked out from the ingredient list (`Shopping.mainsOf`). Dishes with `tried: false` are pink and dealt as every third card.
+
+## How it looks
+
+Each dish is a poster in the colour of its main ingredient (pink for dishes still to try), with a plate of up to three emoji. `plate()` in `app.js` picks them: first the foods the dish's name mentions, then its main ingredients. The colours, fonts and motion are all in `styles.css`; `prefers-reduced-motion` turns the motion off. Choosing "We're cooking this tonight" shows the dish as a full-screen poster that can be shared.
+
+`icons/icon.svg` is the home-screen icon. The two PNGs are that file rendered at 192 and 512 pixels.
+
+The site sits behind Netlify's site-wide password, which also covers `/api`. The API has no login of its own.

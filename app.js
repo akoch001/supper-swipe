@@ -5,10 +5,42 @@
     pork: 'pork', bacon: 'pork', sausages: 'pork', chorizo: 'pork', ham: 'pork', 'parma ham': 'pork',
     salmon: 'fish', cod: 'fish', tuna: 'fish', prawns: 'fish', hake: 'fish', haddock: 'fish', scallops: 'fish'
   };
-  const SCORES = [['ease', 'Ease'], ['speed', 'Speed'], ['love', 'How much we like it']];
+  // [field, full name, short name for the card]
+  const SCORES = [['ease', 'Ease', 'Ease'], ['speed', 'Speed', 'Speed'], ['love', 'How much we like it', 'We like it']];
   const WHATSAPP_LINK_LIMIT = 6000;
+
+  // The plate on each dish: emoji for the foods its name mentions, then for its main ingredients.
+  const NAME_EMOJI = [
+    ['chicken|turkey', '🍗'], ['prawn|shrimp', '🦐'], ['salmon|hake|haddock|cod\\b|tuna|fish', '🐟'], ['scallop|mussel|oyster', '🦪'],
+    ['beef|steak|ragout|ragu|mince', '🥩'], ['bacon|ham\\b|pancetta', '🥓'], ['lamb|pork', '🍖'], ['sausage|chorizo', '🌭'],
+    ['aubergine|eggplant', '🍆'], ['carrot', '🥕'], ['cauliflower|broccoli', '🥦'], ['pepper', '🫑'], ['tomato', '🍅'], ['potato', '🥔'],
+    ['mango', '🥭'], ['coconut', '🥥'], ['lemon|lime', '🍋'], ['peanut|satay|cashew|almond', '🥜'], ['noodle|pad thai|ramen', '🍜'],
+    ['rice|kedgeree|risotto|couscous', '🍚'], ['orzo|pasta|lasagne|spaghetti', '🍝'], ['tortellini|dumpling|gyoza', '🥟'],
+    ['halloumi|feta|cheese|parmesan', '🧀'], ['eggs?\\b', '🥚'], ['lentil|bean|chickpea', '🫘'], ['yogurt', '🥛'], ['salad', '🥗'],
+    ['tiramis|cake', '🍰'], ['champagne', '🥂'], ['honey', '🍯'], ['rosemary|sage\\b|herb|basil', '🌿'], ['ginger|garlic', '🧄'],
+    ['mushroom', '🍄'], ['leek|spinach', '🥬'], ['taco|fajita|tortilla|wrap', '🌮'], ['burger', '🍔'], ['pizza', '🍕'], ['pie\\b', '🥧'],
+    ['shawarma|kebab|souvlaki', '🥙'], ['curry|masala', '🍛'], ['soup|stew', '🍲']
+  ].map(([words, emoji]) => [new RegExp('(?:^|[^a-z])(?:' + words + ')'), emoji]);
+  const FOOD_EMOJI = {
+    chicken: '🍗', turkey: '🍗', beef: '🥩', mince: '🥩', steak: '🥩', lamb: '🍖', pork: '🍖', 'pork mince': '🍖', bacon: '🥓', 'parma ham': '🥓', ham: '🥓',
+    sausages: '🌭', chorizo: '🌭', salmon: '🐟', hake: '🐟', haddock: '🐟', cod: '🐟', tuna: '🐟', prawns: '🦐', scallops: '🦪',
+    aubergines: '🍆', cauliflower: '🥦', broccoli: '🥦', carrots: '🥕', leeks: '🥬', spinach: '🥬', 'pak choi': '🥬', 'bean sprouts': '🌱', mangoes: '🥭',
+    peaches: '🍑', potatoes: '🥔', peppers: '🫑', tomatoes: '🍅', 'stir-fry vegetables': '🥦', mushrooms: '🍄', courgettes: '🥒', cucumber: '🥒',
+    avocados: '🥑', corn: '🌽', apples: '🍎', pineapple: '🍍', salad: '🥗', eggs: '🥚', feta: '🧀', halloumi: '🧀', parmesan: '🧀', cheddar: '🧀',
+    'gruyère': '🧀', burrata: '🧀', cheese: '🧀', mascarpone: '🧀', 'greek yogurt': '🥛', rice: '🍚', noodles: '🍜', couscous: '🍚', orzo: '🍝',
+    lasagne: '🍝', tortellini: '🥟', pasta: '🍝', spaghetti: '🍝', 'sun-dried tomatoes': '🍅', 'coconut milk': '🥥', olives: '🫒', cashews: '🥜',
+    almonds: '🥜', 'peanut butter': '🥜', peanuts: '🥜', 'crispy onions': '🧅', prunes: '🍇', lentils: '🫘', chickpeas: '🫘', beans: '🫘',
+    edamame: '🫘', 'candied jalapeños': '🌶️', lemons: '🍋', limes: '🍋', oranges: '🍊', garlic: '🧄', onions: '🧅', 'red onions': '🧅',
+    shallots: '🧅', 'spring onions': '🧅', 'red chillies': '🌶️', butter: '🧈', bread: '🥖', ciabatta: '🥖', tortillas: '🌮', ladyfingers: '🍪',
+    honey: '🍯', 'white wine': '🥂', 'red wine': '🍷', champagne: '🥂', 'dry sherry': '🍷', coffee: '☕', 'dark chocolate': '🍫', 'cocoa powder': '🍫',
+    basil: '🌿', coriander: '🌿', parsley: '🌿', mint: '🌿', sage: '🌿', rosemary: '🌿', thyme: '🌿', 'mixed herbs': '🌿', 'thai basil': '🌿', chives: '🌿'
+  };
+  const LEADS = ['🍗', '🦐', '🐟', '🦪', '🥩', '🥓', '🍖', '🌭'];
+  const AISLE_EMOJI = { veg: '🥦', herbs: '🌿', meat: '🍗', fish: '🐟', dairy: '🧀', bakery: '🥖', dry: '🍝', tins: '🥫', frozen: '🧊', sauces: '🫒', spices: '🧂', drinks: '🍷', other: '🛒' };
+
   const $ = id => document.getElementById(id);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canAnimate = !reduced && typeof Element.prototype.animate === 'function';
 
   const recipes = new Map();
   let saving = 0, lastLoaded = '';
@@ -30,10 +62,13 @@
   let queue = [], passed = [];
   let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
-  let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false, busy = false;
+  let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false;
+  let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
+  const pending = new Map();
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const list = v => Array.isArray(v) ? v : [];
+  const ic = name => '<svg class="ic" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
   const mainCache = new WeakMap();
   const mains = r => {
     const lines = list(r.shopping);
@@ -46,6 +81,53 @@
     return list(r.tags).includes('dessert') ? 'other' : 'veg';
   };
   const colourOf = r => (r.tried ? groupOf(r) : 'to-try');
+  // The three ingredients a card names, leading with the ones the dish is called after.
+  const headline = r => {
+    const title = String(r.title || '').toLowerCase(), named = m => title.includes(m.replace(/(es|s)$/, ''));
+    return mains(r).slice().sort((a, b) => named(b) - named(a)).slice(0, 3);
+  };
+  // A dish saved from a site that would not share its recipe: a link and nothing else.
+  const needsRecipe = r => !list(r.shopping).length && !list(r.steps).length && /^https?:\/\//.test(r.sourceUrl || '');
+  // A few of the emoji are recent. A phone that can't draw one gets its stand-in, or goes without.
+  const NEWER = { '🫑': '🌶️', '🫒': '', '🫘': '🥜' };
+  const drawn = new Map();
+  function canDraw(emoji) {
+    if (!drawn.has(emoji)) {
+      let colour = true;
+      try {
+        const ctx = Object.assign(document.createElement('canvas'), { width: 24, height: 24 }).getContext('2d', { willReadFrequently: true });
+        ctx.font = '18px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+        ctx.textBaseline = 'top';
+        ctx.fillText(emoji, 2, 2);
+        const px = ctx.getImageData(0, 0, 24, 24).data;
+        colour = false;
+        for (let i = 0; i < px.length && !colour; i += 4) colour = px[i + 3] > 40 && (Math.abs(px[i] - px[i + 1]) > 24 || Math.abs(px[i + 1] - px[i + 2]) > 24);
+      } catch (e) { /* no canvas: assume it can */ }
+      drawn.set(emoji, colour);
+    }
+    return drawn.get(emoji);
+  }
+  const usable = emoji => (emoji in NEWER && !canDraw(emoji) ? NEWER[emoji] : emoji);
+  const plateCache = new WeakMap();
+  // Up to three emoji for a dish, biggest first.
+  function plate(r) {
+    const lines = list(r.shopping), dessert = list(r.tags).includes('dessert');
+    const title = String(r.title || '').toLowerCase(), key = title + (dessert ? '|d' : '');
+    let byTitle = plateCache.get(lines);
+    if (!byTitle) plateCache.set(lines, byTitle = new Map());
+    if (!byTitle.has(key)) {
+      const named = NAME_EMOJI.map(([words, emoji]) => [title.search(words), emoji]).filter(x => x[0] >= 0).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+      const fromMains = mains(r).map(m => FOOD_EMOJI[m]);
+      const fromRest = lines.flatMap(Shopping.parseLine).map(p => FOOD_EMOJI[p.name.toLowerCase()]);
+      const found = [...new Set(named.concat(dessert ? fromRest.concat(fromMains) : fromMains.concat(fromRest)).filter(Boolean).map(usable).filter(Boolean))].slice(0, 3);
+      const lead = found.findIndex(e => LEADS.includes(e));
+      if (lead > 0) found.unshift(found.splice(lead, 1)[0]);
+      byTitle.set(key, found.length ? found : ['🍽️']);
+    }
+    return byTitle.get(key);
+  }
+  const art = r => '<div class="art" aria-hidden="true"><div class="plate"></div>' + plate(r).map((e, i) => '<span class="sticker s' + (i + 1) + '">' + e + '</span>').join('') + '</div>';
+  const variant = id => 'v' + ([...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % 3);
   const matches = r => {
     if (easyOnly && !((r.ease || 0) >= 3)) return false;
     if (lexiOnly && !r.lexi) return false;
@@ -71,14 +153,22 @@
     if (days === 1) return 'Had yesterday';
     return 'Last had ' + days + ' days ago';
   };
-  const dots = n => '<span class="dots" aria-label="' + (n || 0) + ' out of 5">' + [1, 2, 3, 4, 5].map(i => '<i class="' + (i <= n ? 'on' : '') + '"></i>').join('') + '</span>';
+  const dots = (n, name) => '<span class="dots" role="img" aria-label="' + name + ': ' + (n || 0) + ' out of 5">' + [1, 2, 3, 4, 5].map(i => '<i class="' + (i <= n ? 'on' : '') + '"></i>').join('') + '</span>';
 
+  // For screen readers only: things that are already plain to see.
+  const say = msg => { $('live').textContent = msg; };
   function toast(msg) {
     const t = $('toast');
-    t.textContent = msg; t.hidden = false;
+    t.textContent = msg;
+    t.classList.remove('on');
+    void t.offsetWidth;
+    t.classList.add('on');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
+    toast.timer = setTimeout(() => t.classList.remove('on'), 2600);
   }
+  const buzz = ms => {
+    try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* no haptics on this phone */ }
+  };
 
   // Every third card is something new to try, for as long as there are any left.
   function deal(ids) {
@@ -105,30 +195,38 @@
   }
 
   function cardHTML(id) {
-    const r = recipes.get(id);
-    return '<article class="card ' + colourOf(r) + '" data-id="' + esc(id) + '">' +
-      '<span class="stamp yes">Shortlist</span><span class="stamp no">Not tonight</span>' +
-      '<div class="eyebrow"><span>' + esc(r.tried ? mains(r).slice(0, 3).join(' · ') : 'Try something new') + '</span>' + (r.lexi ? '<span class="badge">Lexi proof</span>' : '') + (r.sample ? '<span class="badge">Sample</span>' : '') + '</div>' +
-      '<h2>' + esc(r.title) + '</h2>' +
+    const r = recipes.get(id), title = String(r.title || '');
+    const size = title.length > 50 ? ' class="xlong"' : title.length > 34 ? ' class="long"' : '';
+    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Lexi proof</span>' : '');
+    const kicker = headline(r).join(' · ');
+    return '<article class="card ' + colourOf(r) + ' ' + variant(id) + '" data-id="' + esc(id) + '">' + art(r) +
+      '<span class="stamp yes" aria-hidden="true">Shortlist</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
+      '<div class="card-top">' + badges + '</div>' +
+      '<div class="card-body">' +
+      (kicker ? '<p class="kicker">' + esc(kicker) + '</p>' : '') +
+      '<h2' + size + '>' + esc(title) + '</h2>' +
       (r.blurb ? '<p class="blurb">' + esc(r.blurb) + '</p>' : '') +
-      '<div class="meta">' + (r.minutes ? '<span>' + esc(r.minutes) + ' min total</span>' : '') + (r.handsOn ? '<span>' + esc(r.handsOn) + ' min hands-on</span>' : '') + '<span>' + esc(r.needsRecipe ? 'Recipe on the original site' : lastHad(r)) + '</span></div>' +
-      '<div class="scores">' + SCORES.map(s => '<div class="score"><span>' + s[1] + '</span>' + dots(r[s[0]] || 0) + '</div>').join('') + '</div>' +
-      '</article>';
+      '<div class="meta">' + (r.minutes ? '<span>' + ic('clock') + esc(r.minutes) + ' min</span>' : '') + (r.handsOn ? '<span>' + esc(r.handsOn) + ' hands-on</span>' : '') + '<span>' + esc(needsRecipe(r) ? 'Recipe on the original site' : lastHad(r)) + '</span></div>' +
+      '<div class="scores">' + SCORES.map(s => '<div class="score"><b>' + s[2] + '</b>' + dots(r[s[0]] || 0, s[1]) + '</div>').join('') + '</div>' +
+      '</div></article>';
   }
+  const emptyHTML = (emoji, title, text, buttons, spin) => '<div class="empty"><div class="empty-art' + (spin ? ' spin' : '') + '" aria-hidden="true"><span>' + emoji + '</span></div><h2>' + title + '</h2><p>' + text + '</p>' + (buttons || '') + '</div>';
 
   function renderStack() {
-    if (dragging || busy) return;
+    if (dragging) return;
     const stack = $('stack');
     let empty = '';
-    if (!loaded && !failed) empty = '<div class="empty"><h2>Shuffling the deck</h2><p>Fetching your dishes.</p></div>';
-    else if (failed) empty = '<div class="empty"><h2>Your dishes are out of reach</h2><p>' + esc(failed) + '</p></div>';
-    else if (!recipes.size) empty = '<div class="empty"><h2>No dishes yet</h2><p>Add your first favourite and it will appear here as a card.</p><button type="button" class="primary" data-act="add">Add a dish</button></div>';
+    if (!loaded && !failed) empty = emptyHTML('🍳', 'Shuffling the deck', 'Fetching your dishes.', '', true);
+    else if (failed) empty = emptyHTML('📡', 'Your dishes are out of reach', esc(failed), '<button type="button" class="primary" data-act="retry">Try again</button>');
+    else if (!recipes.size) empty = emptyHTML('🍽️', 'No dishes yet', 'Add your first favourite and it will appear here as a card.', '<button type="button" class="primary" data-act="add">' + ic('plus') + 'Add a dish</button>');
+    else if (![...recipes.values()].some(matches)) empty = emptyHTML('🔍', 'Nothing fits all of that', 'Turn a filter off to see more dishes.');
     else if (!queue.length && shortlist.length) {
       const more = passed.some(id => !shortlist.includes(id));
-      empty = '<div class="empty"><h2>Time to choose</h2><p>You have ' + shortlist.length + ' on your shortlist.</p><button type="button" class="primary" data-act="list">See your shortlist</button>' + (more ? '<button type="button" class="ghost" data-act="again">Swipe the rest again</button>' : '') + '</div>';
+      empty = emptyHTML('🎉', 'Time to choose', 'You have ' + shortlist.length + ' on your shortlist.', '<button type="button" class="primary" data-act="list">See your shortlist</button>' + (more ? '<button type="button" class="quiet" data-act="again">Swipe the rest again</button>' : ''));
     }
-    else if (!queue.length && !passed.length) empty = '<div class="empty"><h2>Nothing fits all of that</h2><p>Turn a filter off to see more dishes.</p></div>';
-    else if (!queue.length) empty = '<div class="empty"><h2>That was the whole deck</h2><p>Nothing grabbed you? Shuffle and go again.</p><button type="button" class="primary" data-act="again">Go again</button></div>';
+    else if (!queue.length) empty = emptyHTML('🤷', 'That was the whole deck', 'Nothing grabbed you? Shuffle and go again.', '<button type="button" class="primary" data-act="again">Go again</button>');
+    stack.classList.remove('settle', 'advance');
+    stack.style.setProperty('--p', '0');
     if (empty) stack.innerHTML = empty;
     else {
       stack.innerHTML = queue.slice(0, 3).reverse().map(cardHTML).join('');
@@ -159,7 +257,7 @@
     document.querySelectorAll('[data-lexi]').forEach(b => b.setAttribute('aria-pressed', String(lexiOnly)));
   }
 
-  const rateRows = (valueOf, attr) => SCORES.map(s => '<div class="rate-row"><span>' + s[1] + '</span><div class="pips">' +
+  const rateRows = (valueOf, attr) => SCORES.map(s => '<div class="rate-row"><span>' + s[2] + '</span><div class="pips">' +
     [1, 2, 3, 4, 5].map(i => '<button type="button" ' + attr + '="' + s[0] + '" data-val="' + i + '" class="' + (i <= valueOf(s[0]) ? 'on' : '') + '" aria-label="' + s[1] + ' ' + i + ' out of 5">' + i + '</button>').join('') +
     '</div></div>').join('');
 
@@ -168,7 +266,9 @@
     const r = openId && recipes.get(openId);
     box.hidden = !r;
     if (!r) return;
+    const on = shortlist.includes(openId), kicker = headline(r).join(' · ');
     const src = /^https?:\/\//.test(r.sourceUrl || '') ? '<a href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">Original recipe' + (r.source ? ' from ' + esc(r.source) : '') + '</a>' : esc(r.source ? 'From: ' + r.source : '');
+    const facts = [r.minutes ? ic('clock') + esc(r.minutes) + ' min' : '', r.serves ? 'Serves ' + esc(r.serves) : '', esc(lastHad(r))].filter(Boolean);
     const takes = [
       r.kit ? 'Washing up: ' + r.kit : '',
       list(r.shopping).length ? list(r.shopping).length + ' ingredients' : '',
@@ -176,9 +276,17 @@
       list(r.hard).length ? 'Hard to find: ' + list(r.hard).join(', ') : ''
     ].filter(Boolean);
     box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button><button type="button" class="ghost" data-act="edit">Edit</button></div>' +
-      '<div><h2>' + esc(r.title) + '</h2><p class="sub">' +
-        [r.sample ? 'Sample dish' : '', r.minutes ? r.minutes + ' min' : '', r.serves ? 'Serves ' + r.serves : '', lastHad(r)].filter(Boolean).map(esc).join(' · ') + '</p></div>' +
+      '<header class="hero ' + colourOf(r) + ' ' + variant(openId) + '">' + art(r) +
+        '<div class="hero-bar"><button type="button" data-act="close" aria-label="Back">' + ic('back') + '</button><button type="button" data-act="edit">' + ic('pencil') + 'Edit</button></div>' +
+        '<div class="hero-text">' +
+          (r.tried ? '' : '<p class="kicker">Try something new</p>') +
+          (kicker ? '<p class="kicker">' + esc(kicker) + '</p>' : '') +
+          '<h2>' + esc(r.title) + '</h2>' +
+          '<div class="meta">' + facts.map(x => '<span>' + x + '</span>').join('') + '</div>' +
+        '</div>' +
+      '</header>' +
+      '<div class="sheet-body">' +
+      (r.blurb ? '<p class="lede">' + esc(r.blurb) + '</p>' : '') +
       '<div class="rate">' +
         '<div class="rate-row"><span>Lexi proof?</span><div class="seg">' +
         '<button type="button" data-flag="lexi" data-val="1" aria-pressed="' + !!r.lexi + '">Yes</button>' +
@@ -188,18 +296,21 @@
         '<button type="button" data-flag="tried" data-val="0" aria-pressed="' + !r.tried + '">To try</button></div></div></div>' +
       '<section><h3>Rate it</h3><div class="rate">' + rateRows(s => r[s] || 0, 'data-rate') + '</div></section>' +
       (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '') +
-      (r.needsRecipe ? '<p class="note">This recipe has not been copied in yet. Use the link below to see it.</p>' : '') +
-      (takes.length ? '<section><h3>What it takes</h3><ul>' + takes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
-      (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul>' + list(r.shopping).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
-      (list(r.steps).length ? '<section><h3>Method</h3><ol>' + list(r.steps).map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></section>' : '') +
-      (src ? '<p>' + src + '</p>' : '') +
-      '<div class="sheet-actions"><button type="button" class="primary" data-act="cook">We\'re cooking this tonight</button>' +
-      '<button type="button" class="ghost" data-toggle="' + esc(openId) + '">' + (shortlist.includes(openId) ? 'Remove from shortlist' : 'Add to shortlist') + '</button></div>' +
+      (needsRecipe(r) ? '<p class="note">This recipe has not been copied in yet. Use the link below to see it, or tap Edit to add it.</p>' : '') +
+      (takes.length ? '<section><h3>What it takes</h3><ul class="takes">' + takes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
+      (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul class="ingredients">' + list(r.shopping).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
+      (list(r.steps).length ? '<section><h3>Method</h3><ol class="steps">' + list(r.steps).map(x => '<li><span>' + esc(x) + '</span></li>').join('') + '</ol></section>' : '') +
+      (src ? '<p class="source">' + src + '</p>' : '') +
+      '</div>' +
+      '<div class="cta-bar"><button type="button" class="ghost" data-toggle="' + esc(openId) + '" aria-pressed="' + on + '">' + ic('heart') + (on ? 'On shortlist' : 'Shortlist') + '</button>' +
+      '<button type="button" class="primary" data-act="cook">We\'re cooking this tonight</button></div>' +
       '</div>';
   }
 
   const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
+  const rowOpen = (id, r) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true"><span>' + plate(r)[0] + '</span></span>' +
+    '<span class="pick-text"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
 
   function renderAll() {
     const words = $('search').value.toLowerCase().split(/\s+/).filter(Boolean);
@@ -214,25 +325,40 @@
     $('allCount').textContent = loaded ? found.length + (found.length === 1 ? ' dish' : ' dishes') : '';
     $('allList').innerHTML = found.length ? found.map(([id, r]) => {
       const on = shortlist.includes(id);
-      return '<div class="pick ' + colourOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
-        '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? 'On shortlist' : 'Add to shortlist') + '</button></div>';
-    }).join('') : (loaded ? '<p class="empty-note">No dishes match that.</p>' : '');
+      return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r) +
+        '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '" aria-label="' + esc(r.title) + ': on the shortlist">' + ic(on ? 'check' : 'plus') + '</button></div>';
+    }).join('') : (loaded ? '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">🔍</span>No dishes match that.</p>' : '');
+  }
+
+  function renderBadge() {
+    const badge = $('shortBadge'), n = shortlist.length;
+    badge.textContent = n;
+    badge.hidden = !n;
+    $('shortTab').setAttribute('aria-label', n ? 'Shortlist, ' + n + (n === 1 ? ' dish' : ' dishes') : 'Shortlist');
+    if (n > badgeCount && !flying) bumpBadge();
+    badgeCount = n;
+  }
+  function bumpBadge() {
+    const badge = $('shortBadge');
+    badge.classList.remove('bump');
+    void badge.offsetWidth;
+    badge.classList.add('bump');
   }
 
   function renderShortlist() {
-    $('shortTab').textContent = shortlist.length ? 'Shortlist (' + shortlist.length + ')' : 'Shortlist';
+    renderBadge();
     $('panelShort').innerHTML = '<h2 class="panel-title">Your shortlist</h2>' + (shortlist.length
       ? '<p class="panel-note">Pick tonight\'s dinner, or plan a few nights and create one shopping list.</p>' +
         '<div class="picks">' + shortlist.map(id => {
           const r = recipes.get(id);
           if (!r) return '';
-          const n = peopleFor(id);
-          return '<div class="pick ' + colourOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
-            '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">Remove</button>' +
-            '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">−</button><span>' + n + '</span><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">+</button></span></div></div>';
+          return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r) +
+            '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">' + ic('x') + '</button>' +
+            '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">' + ic('minus') + '</button><b>' + peopleFor(id) + '</b><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">' + ic('plus') + '</button></span></div></div>';
         }).join('') + '</div>' +
-        '<div class="sheet-actions"><button type="button" class="primary" data-act="shop">Create shopping list</button><button type="button" class="ghost" data-act="clear">Clear shortlist</button></div>'
-      : '<p class="empty-note">Nothing here yet. Swipe right on a dish, or add one from All dishes.</p>');
+        '<button type="button" class="quiet" data-act="clear">Clear shortlist</button>' +
+        '<div class="list-actions"><button type="button" class="primary" data-act="shop">' + ic('bag') + 'Create shopping list</button></div>'
+      : '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">💭</span>Nothing here yet. Swipe right on a dish, or add one from All dishes.</p>');
   }
 
   function shoppingList() {
@@ -254,15 +380,20 @@
       store(TICKS_KEY, ticks);
     }
     box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button></div>' +
-      '<div><h2>Shopping list</h2><p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p></div>' +
+      '<div class="sheet-bar"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button><h2>Shopping list</h2></div>' +
+      '<div class="sheet-body">' +
+      '<p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
       '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes.</p>' +
-      '<div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
-      aisles.map(a => '<section class="aisle"><h3>' + esc(a.label) + '</h3>' + a.items.map(i =>
+      '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
+      '<div class="bar" id="shopBar" aria-hidden="true"><i></i></div></div>' +
+      aisles.map(a => '<section class="aisle"><h3><span aria-hidden="true">' + (AISLE_EMOJI[a.key] || '🛒') + '</span>' + esc(a.label) + '</h3>' + a.items.map(i =>
         '<label class="buy"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
         '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span></span></label>').join('') + '</section>').join('') +
-      '<div class="send-bar"><button type="button" class="primary" data-act="whatsapp">WhatsApp</button><button type="button" class="ghost" data-act="pdf">Download PDF</button><button type="button" class="ghost" data-act="share">Share or copy</button></div>' +
+      '</div>' +
+      '<div class="send-bar"><button type="button" class="primary" data-act="whatsapp">' + ic('chat') + 'WhatsApp</button>' +
+      '<button type="button" class="ghost" data-act="pdf" aria-label="Download PDF">' + ic('download') + 'PDF</button>' +
+      '<button type="button" class="ghost" data-act="share" aria-label="Share or copy">' + ic('share') + 'Share</button></div>' +
       '</div>';
     renderShopCount();
   }
@@ -270,7 +401,8 @@
   function renderShopCount() {
     const names = shopNames(), n = names.filter(x => ticks.names.includes(x)).length;
     $('shopCount').textContent = n + ' of ' + names.length + ' ticked';
-    $('allBtn').textContent = n === names.length ? 'Clear all' : 'Select all';
+    $('shopBar').style.setProperty('--done', names.length ? (n / names.length).toFixed(3) : '0');
+    $('allBtn').textContent = names.length && n === names.length ? 'Clear all' : 'Select all';
   }
   // What gets sent: the ticked items, or the whole list if nothing is ticked.
   function listToSend() {
@@ -312,8 +444,13 @@
 
   function render() { renderFilter(); renderStack(); renderAll(); renderShortlist(); renderRecipe(); renderShop(); }
 
-  function toggleShortlist(id) {
+  function toggleShortlist(id, source) {
     const on = shortlist.includes(id);
+    if (!on && source) {
+      const box = source.getBoundingClientRect();
+      burst(box.left + box.width / 2, box.top + box.height / 2, plate(recipes.get(id)), 6);
+      buzz(10);
+    }
     shortlist = on ? shortlist.filter(x => x !== id) : shortlist.concat(id);
     passed = passed.filter(x => x !== id);
     saveShortlist();
@@ -322,9 +459,127 @@
     toast(recipes.get(id).title + (on ? ' is off your shortlist' : ' is on your shortlist'));
   }
 
+  // Little celebrations. All of it is skipped for people who ask their phone for less motion.
+  const at = (x, y) => 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-50%)';
+  function burst(x, y, emoji, count) {
+    if (!canAnimate) return;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('span');
+      el.textContent = emoji[i % emoji.length];
+      $('fx').append(el);
+      const angle = Math.random() * Math.PI * 2, far = 50 + Math.random() * 110;
+      const x1 = x + Math.cos(angle) * far, y1 = y + Math.sin(angle) * far - 80, spin = (Math.random() - .5) * 240;
+      el.animate([
+        { transform: at(x, y) + ' scale(.3)', opacity: 1 },
+        { transform: at(x1, y1) + ' scale(1.15) rotate(' + spin * .6 + 'deg)', opacity: 1, offset: .45, easing: 'ease-in' },
+        { transform: at(x1 + (x1 - x) * .25, y1 + 150) + ' scale(.8) rotate(' + spin + 'deg)', opacity: 0 }
+      ], { duration: 850 + Math.random() * 350, easing: 'cubic-bezier(.15, .75, .3, 1)', fill: 'forwards' }).onfinish = () => el.remove();
+    }
+  }
+  function celebrate(card) {
+    buzz(12);
+    const r = recipes.get(card.dataset.id);
+    if (!canAnimate || !r) return;
+    const box = card.getBoundingClientRect(), x = box.left + box.width / 2, y = box.top + box.height * .32;
+    burst(x, y, plate(r).concat('✨'), 10);
+    const to = $('shortTab').querySelector('.tab-ico').getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2;
+    const token = document.createElement('span');
+    token.textContent = plate(r)[0];
+    $('fx').append(token);
+    flying = true;
+    const land = () => {
+      if (!flying) return;
+      flying = false;
+      token.remove();
+      bumpBadge();
+    };
+    token.animate([
+      { transform: at(x, y) + ' scale(1.7)', opacity: 1 },
+      { transform: at((x + tx) / 2 + 36, Math.min(y, ty) - 40) + ' scale(1.3)', opacity: 1, offset: .5 },
+      { transform: at(tx, ty) + ' scale(.5)', opacity: .9 }
+    ], { duration: 620, easing: 'cubic-bezier(.4, 0, .6, 1)', fill: 'forwards' }).onfinish = land;
+    setTimeout(land, 900);
+  }
+
+  // The moment a dinner is chosen: its card as a full-screen poster, made to be screenshotted or sent on.
+  function tonightText(r) {
+    const now = new Date();
+    const ready = r.minutes && r.minutes <= 240 ? new Date(now.getTime() + r.minutes * 60000) : null;
+    return {
+      day: now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+      by: ready ? 'On the table by ' + ready.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''
+    };
+  }
+  function showTonight(id) {
+    const r = recipes.get(id), box = $('tonight'), { day, by } = tonightText(r);
+    box.className = 'tonight ' + colourOf(r) + ' ' + variant(id);
+    box.dataset.id = id;
+    box.innerHTML = art(r) + '<p class="tonight-brand" aria-hidden="true">Supper Swipe</p>' +
+      '<div class="tonight-text"><p class="kicker">Tonight · ' + esc(day) + '</p><h2' + (String(r.title).length > 34 ? ' class="long"' : '') + '>' + esc(r.title) + '</h2>' + (by ? '<p class="tonight-by">' + esc(by) + '</p>' : '') + '</div>' +
+      '<div class="tonight-actions"><button type="button" class="soft" data-act="tell">' + ic('share') + 'Tell someone</button><button type="button" data-act="done">Done</button></div>';
+    box.hidden = false;
+    $('recipe').inert = true;
+    if (canAnimate) {
+      box.getAnimations().forEach(a => a.cancel());
+      box.animate([{ opacity: 0, transform: 'scale(1.08)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2, .85, .25, 1)' });
+      setTimeout(() => { if (!box.hidden) burst(innerWidth / 2, innerHeight * .42, plate(r).concat('✨', '🎉'), 16); }, 380);
+    }
+    buzz([14, 60, 20]);
+    box.querySelector('[data-act="done"]').focus({ preventScroll: true });
+  }
+  function hideTonight() {
+    const box = $('tonight');
+    if (box.hidden) return;
+    box.hidden = true;
+    $('recipe').inert = !$('adder').hidden;
+    const back = $('recipe').querySelector('[data-act="close"]');
+    if (back && openId) back.focus({ preventScroll: true });
+  }
+  $('tonight').addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.act !== 'tell') { hideTonight(); return; }
+    const r = recipes.get($('tonight').dataset.id);
+    if (!r) return;
+    const text = 'Tonight: ' + r.title + ' ' + plate(r)[0] + (tonightText(r).by ? '\n' + tonightText(r).by : '');
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+  });
+
+  // Sheets grow out of whatever was tapped, or rise from the bottom.
+  function showSheet(box, source) {
+    if (!canAnimate) return;
+    box.getAnimations().forEach(a => a.cancel());
+    const from = source && source.isConnected ? source.getBoundingClientRect() : null;
+    const first = from && from.width
+      ? { transform: 'translate(' + from.left.toFixed(1) + 'px,' + from.top.toFixed(1) + 'px) scale(' + (from.width / innerWidth).toFixed(3) + ')', opacity: 0 }
+      : { transform: 'translateY(40px)', opacity: 0 };
+    box.animate([first, { transform: 'none', opacity: 1 }], { duration: from ? 380 : 300, easing: 'cubic-bezier(.2, .85, .25, 1)' });
+  }
+  function closeSheet(box) {
+    if (closing) return;
+    if (!canAnimate) { history.back(); return; }
+    closing = true;
+    const done = () => {
+      if (!closing) return;
+      closing = false;
+      history.back();
+    };
+    box.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(32px)', opacity: 0 }], { duration: 170, easing: 'ease-in', fill: 'forwards' }).onfinish = done;
+    setTimeout(done, 400);
+  }
+  const topSheet = () => (!$('adder').hidden ? $('adder') : shopOpen ? $('shop') : openId ? $('recipe') : null);
+
   // Every sheet is a browser history entry, so the phone's back gesture closes it instead of leaving the app.
-  function applyNav(state) {
+  function applyNav(state, source) {
     const s = state || {};
+    const was = { recipe: openId, shop: shopOpen, add: !$('adder').hidden };
     openId = s.recipe || null;
     editId = s.edit || null;
     tab = s.tab || 'swipe';
@@ -342,14 +597,26 @@
     });
     renderRecipe();
     renderShop();
-    if (openId) $('recipe').scrollTop = 0;
-    if (shopOpen) $('shop').scrollTop = 0;
+    // Only the top layer can be reached by keyboard or screen reader.
+    $('app').inert = !!(openId || shopOpen || s.add);
+    $('recipe').inert = !!s.add;
+    const opened = s.add && !was.add ? $('adder') : shopOpen && !was.shop ? $('shop') : openId && openId !== was.recipe ? $('recipe') : null;
+    for (const box of [$('recipe'), $('shop'), $('adder')]) if (box.hidden && box.getAnimations) box.getAnimations().forEach(a => a.cancel());
+    if (opened) {
+      opened.scrollTop = 0;
+      showSheet(opened, source);
+      const first = opened.querySelector('[data-act="close"], #addClose');
+      if (first && opened !== $('adder')) first.focus({ preventScroll: true });
+    } else if (!topSheet() && (was.recipe || was.shop || was.add)) {
+      const back = (was.recipe && document.querySelector('.panel:not([hidden]) [data-open="' + CSS.escape(was.recipe) + '"]')) || document.querySelector('.tabs [aria-current]');
+      if (back) back.focus({ preventScroll: true });
+    }
   }
-  function go(state) {
+  function go(state, source) {
     history.pushState(state, '');
-    applyNav(state);
+    applyNav(state, source);
   }
-  const openRecipe = id => go({ tab, recipe: id });
+  const openRecipe = (id, source) => go({ tab, recipe: id }, source);
   const setTab = t => {
     if (t !== tab) {
       go({ tab: t });
@@ -357,64 +624,110 @@
     }
   };
 
-  function setStamps(card, dx) {
-    card.querySelector('.stamp.yes').style.opacity = Math.max(0, Math.min(1, dx / 90));
-    card.querySelector('.stamp.no').style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  // Dragging the top card: it follows the finger, the stamps fade in and the next card rises to meet it.
+  function setDrag(card, dx, dy, width) {
+    const show = Math.min(1, Math.abs(dx) / 90);
+    dragY = dy;
+    card.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px) rotate(' + ((dx / width) * 15 * (card.dataset.low ? -1 : 1)).toFixed(2) + 'deg)';
+    $('stack').style.setProperty('--p', Math.min(1, Math.abs(dx) / (width * .5)).toFixed(3));
+    card.querySelector('.art').style.setProperty('--dx', (dx / width).toFixed(3));
+    card.style.setProperty('--gx', (-1.5 + Math.min(1, Math.abs(dx) / width) * 3).toFixed(3));
+    const yes = card.querySelector('.stamp.yes'), no = card.querySelector('.stamp.no');
+    yes.style.opacity = dx > 0 ? show : 0;
+    no.style.opacity = dx < 0 ? show : 0;
+    yes.style.scale = no.style.scale = (1.4 - .4 * show).toFixed(3);
+  }
+  // The swiped card finishes its exit on a layer above the page, so the next card is ready at once.
+  function flyOut(card, dir) {
+    if (!canAnimate) return;
+    const box = $('stack').getBoundingClientRect();
+    const from = card.style.transform || 'translate(0px, 0px)';
+    const left = box.left + card.offsetLeft, top = box.top + card.offsetTop, width = card.offsetWidth, height = card.offsetHeight;
+    $('fx').append(card);
+    Object.assign(card.style, { position: 'fixed', inset: 'auto', left: left + 'px', top: top + 'px', width: width + 'px', height: height + 'px', transition: 'none' });
+    const done = () => card.remove();
+    card.animate([{ transform: from }, { transform: 'translate(' + dir * (innerWidth + width * .5) + 'px,' + dragY.toFixed(1) + 'px) rotate(' + dir * 24 + 'deg)' }],
+      { duration: 320, easing: 'cubic-bezier(.45, 0, .8, .4)', fill: 'forwards' }).onfinish = done;
+    setTimeout(done, 800);
+  }
+  function settle(card) {
+    const stack = $('stack');
+    dragY = 0;
+    stack.classList.add('settle');
+    stack.style.setProperty('--p', '0');
+    card.style.transition = reduced ? 'none' : 'transform .5s cubic-bezier(.34, 1.56, .64, 1)';
+    card.style.transform = '';
+    card.querySelector('.art').style.setProperty('--dx', '0');
+    card.style.removeProperty('--gx');
+    card.querySelectorAll('.stamp').forEach(s => { s.style.opacity = 0; });
   }
 
   function fling(dir) {
-    if (busy || !queue.length) return;
-    const card = $('stack').lastElementChild;
-    busy = true;
-    const ms = reduced ? 0 : 240;
+    if (dragging || !queue.length) return;
+    const stack = $('stack'), card = stack.lastElementChild;
+    const risen = Math.min(1, Number(stack.style.getPropertyValue('--p')) || 0);
     if (card && card.classList.contains('card')) {
-      setStamps(card, dir * 90);
-      card.style.transition = 'transform ' + ms + 'ms ease-in';
-      card.style.transform = 'translateX(' + dir * (innerWidth + 240) + 'px) rotate(' + dir * 18 + 'deg)';
+      const yes = card.querySelector('.stamp.yes'), no = card.querySelector('.stamp.no');
+      yes.style.opacity = dir > 0 ? 1 : 0;
+      no.style.opacity = dir < 0 ? 1 : 0;
+      yes.style.scale = no.style.scale = '1';
+      if (dir > 0) celebrate(card);
+      flyOut(card, dir);
     }
-    setTimeout(() => {
-      busy = false;
-      const id = queue.shift();
-      passed.push(id);
-      if (dir > 0 && !shortlist.includes(id)) {
-        shortlist.push(id);
-        saveShortlist();
-        toast(recipes.get(id).title + ' is on your shortlist');
-      }
-      render();
-      if (dir > 0 && !queue.length) setTab('short');
-    }, ms);
+    dragY = 0;
+    const id = queue.shift();
+    passed.push(id);
+    if (dir > 0 && !shortlist.includes(id)) {
+      shortlist.push(id);
+      saveShortlist();
+    }
+    if (recipes.has(id)) say(recipes.get(id).title + (dir > 0 ? ' is on your shortlist' : ': not tonight'));
+    render();
+    // The cards underneath carry on rising from wherever the drag left them.
+    if (canAnimate) {
+      stack.style.setProperty('--from', risen.toFixed(3));
+      stack.classList.add('advance');
+    }
+    if (dir > 0 && !queue.length) setTab('short');
   }
 
   function bindTop(card) {
     if (!card || !card.classList.contains('card')) return;
-    let startX = 0, startY = 0, dx = 0, moved = false, active = false;
+    let startX = 0, startY = 0, dx = 0, width = 1, moved = false, active = false, trail = [];
     card.addEventListener('pointerdown', e => {
-      if (busy) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const box = card.getBoundingClientRect();
       active = true; dragging = true; moved = false; dx = 0;
-      startX = e.clientX; startY = e.clientY;
-      card.setPointerCapture(e.pointerId);
+      startX = e.clientX; startY = e.clientY; width = box.width || 1;
+      trail = [[e.timeStamp, e.clientX]];
+      card.dataset.low = e.clientY > box.top + box.height * .6 ? '1' : '';
+      try { card.setPointerCapture(e.pointerId); } catch (err) { /* the drag still works without capture */ }
       card.style.transition = 'none';
+      $('stack').classList.remove('settle', 'advance');
     });
     card.addEventListener('pointermove', e => {
       if (!active) return;
       dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (Math.abs(dx) + Math.abs(dy) > 8) moved = true;
-      card.style.transform = 'translate(' + dx + 'px,' + dy * .25 + 'px) rotate(' + dx / 18 + 'deg)';
-      setStamps(card, dx);
+      trail.push([e.timeStamp, e.clientX]);
+      if (trail.length > 6) trail.shift();
+      setDrag(card, dx, dy * .3, width);
     });
     const finish = cancelled => {
       if (!active) return;
       active = false; dragging = false;
-      if (!cancelled && Math.abs(dx) > 90) return fling(dx > 0 ? 1 : -1);
-      if (!cancelled && !moved) { openRecipe(card.dataset.id); return; }
-      card.style.transition = reduced ? 'none' : 'transform 200ms ease-out';
-      card.style.transform = '';
-      setStamps(card, 0);
+      const first = trail[0], last = trail[trail.length - 1];
+      const speed = last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0;
+      const far = Math.abs(dx) > width * .28;
+      const flick = Math.abs(speed) > .55 && Math.abs(dx) > 28 && Math.sign(speed) === Math.sign(dx);
+      if (!cancelled && (far || flick)) { fling(dx > 0 ? 1 : -1); return; }
+      settle(card);
     };
     card.addEventListener('pointerup', () => finish(false));
     card.addEventListener('pointercancel', () => finish(true));
+    // A tap opens the recipe on its click, once the touch is over, so the same tap cannot also press a button on the sheet.
+    card.addEventListener('click', () => { if (!moved && card.isConnected && card.parentNode === $('stack')) openRecipe(card.dataset.id, card); });
   }
 
   async function api(path, method, body) {
@@ -431,6 +744,7 @@
     return data;
   }
 
+  // Shows the change at once, then saves it. Saves to one dish go one after another, so none can undo another.
   async function write(id, fields, okMsg) {
     const dish = recipes.get(id);
     const before = Object.fromEntries(Object.keys(fields).map(k => [k, dish[k]]));
@@ -438,31 +752,39 @@
     syncDeck();
     render();
     saving++;
+    writes++;
+    const sent = (pending.get(id) || Promise.resolve()).then(() => api('/' + id, 'PATCH', fields));
+    pending.set(id, sent.catch(() => {}));
     try {
-      await api('/' + id, 'PATCH', fields);
+      await sent;
       if (okMsg) toast(okMsg);
+      return true;
     } catch (e) {
       Object.assign(dish, before);
       syncDeck();
       render();
       toast('That did not save. Check your connection and try again.');
+      return false;
     } finally {
       saving--;
     }
   }
 
   async function load() {
+    const seen = writes;
     try {
       const { dishes } = await api('');
       const fresh = JSON.stringify(dishes);
-      if (saving || fresh === lastLoaded) return;
+      // An answer that set off before a save finished would put the old values back on screen.
+      if (saving || seen !== writes || fresh === lastLoaded) return;
       lastLoaded = fresh;
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
       loaded = true;
       failed = '';
-      if (first) rebuildDeck(); else syncDeck();
+      if (first) rebuildDeck();
+      syncDeck();
       render();
     } catch (e) {
       if (!loaded) {
@@ -507,12 +829,17 @@
   $('noBtn').addEventListener('click', () => fling(-1));
   $('yesBtn').addEventListener('click', () => fling(1));
   $('backBtn').addEventListener('click', () => {
-    if (busy || !passed.length) return;
+    if (dragging || !passed.length) return;
     const id = passed.pop();
+    const side = shortlist.includes(id) ? 1 : -1;
     queue.unshift(id);
     shortlist = shortlist.filter(x => x !== id);
     saveShortlist();
-    renderStack();
+    render();
+    const card = $('stack').lastElementChild;
+    if (canAnimate && card && card.classList.contains('card')) {
+      card.animate([{ transform: 'translate(' + side * 120 + '%, 0) rotate(' + side * 20 + 'deg)' }, { transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+    }
   });
   $('stack').addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
@@ -520,16 +847,19 @@
     if (b.dataset.act === 'again') { queue = deal(passed.filter(id => !shortlist.includes(id))); passed = []; renderStack(); }
     if (b.dataset.act === 'list') setTab('short');
     if (b.dataset.act === 'add') openAdder();
+    if (b.dataset.act === 'retry') { failed = ''; render(); load(); }
   });
   $('recipe').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b || !openId) return;
-    if (b.dataset.act === 'close') { history.back(); return; }
+    if (b.dataset.act === 'close') { closeSheet($('recipe')); return; }
     if (b.dataset.act === 'edit') { openEditor(openId); return; }
     if (b.dataset.act === 'cook') {
-      shortlist = shortlist.filter(id => id !== openId);
+      const id = openId;
+      shortlist = shortlist.filter(x => x !== id);
       saveShortlist();
-      write(openId, { lastHad: today(), tried: true }, 'Saved. Enjoy dinner.');
+      write(id, { lastHad: today(), tried: true });
+      showTonight(id);
       return;
     }
     if (b.dataset.flag) {
@@ -538,11 +868,16 @@
       write(openId, { [b.dataset.flag]: on }, said);
       return;
     }
-    if (b.dataset.toggle) { toggleShortlist(b.dataset.toggle); return; }
+    if (b.dataset.toggle) { toggleShortlist(b.dataset.toggle, b); return; }
     if (b.dataset.rate) {
       const key = b.dataset.rate, val = Number(b.dataset.val);
       const name = SCORES.find(s => s[0] === key)[1];
+      buzz(8);
       write(openId, { [key]: val }, name + ' saved as ' + val);
+      $('recipe').querySelectorAll('[data-rate="' + key + '"].on').forEach((pip, i) => {
+        pip.style.animationDelay = i * 35 + 'ms';
+        pip.classList.add('pop');
+      });
     }
   });
   document.querySelector('.tabs').addEventListener('click', e => {
@@ -553,13 +888,13 @@
   $('allList').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.open) openRecipe(b.dataset.open);
-    if (b.dataset.toggle) toggleShortlist(b.dataset.toggle);
+    if (b.dataset.open) openRecipe(b.dataset.open, b.closest('.pick'));
+    if (b.dataset.toggle) toggleShortlist(b.dataset.toggle, b);
   });
   $('panelShort').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.open) openRecipe(b.dataset.open);
+    if (b.dataset.open) openRecipe(b.dataset.open, b.closest('.pick'));
     if (b.dataset.toggle) toggleShortlist(b.dataset.toggle);
     if (b.dataset.people) {
       const id = b.dataset.people;
@@ -580,7 +915,7 @@
   $('shop').addEventListener('click', async e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.act === 'close') history.back();
+    if (b.dataset.act === 'close') closeSheet($('shop'));
     if (b.dataset.act === 'all') {
       const names = shopNames();
       ticks.names = names.every(n => ticks.names.includes(n)) ? [] : names;
@@ -614,7 +949,10 @@
     store(TICKS_KEY, ticks);
     renderShopCount();
   });
-  addEventListener('popstate', e => applyNav(e.state));
+  addEventListener('popstate', e => {
+    hideTonight();
+    applyNav(e.state);
+  });
   const formScores = { ease: 0, speed: 0, love: 0 };
   let importedSource = '';
   const renderFormRate = () => { $('formRate').innerHTML = rateRows(s => formScores[s], 'data-form-rate'); };
@@ -635,14 +973,14 @@
     SCORES.forEach(s => { formScores[s[0]] = d[s[0]] || 0; });
     renderFormRate();
     importedSource = '';
-    $('adder').scrollTop = 0;
+    formRun++;
   }
   function openAdder() {
     fillForm({});
     $('moreDetails').open = false;
     $('linkNote').textContent = 'Paste a link and the recipe fills in below for you to check. No link? Just type it in.';
     go({ tab, add: true });
-    $('f-link').focus();
+    $('f-link').focus({ preventScroll: true });
   }
   function openEditor(id) {
     fillForm(recipes.get(id));
@@ -667,8 +1005,11 @@
     $('f-link').value = url;
     $('getRecipe').disabled = true;
     $('linkNote').textContent = 'Reading the recipe.';
+    const run = formRun;
     try {
       const { recipe } = await api('/import', 'POST', { url });
+      // The form may have been closed and reopened for another dish while the site was answering.
+      if (run !== formRun) return;
       $('f-title').value = recipe.title;
       $('f-shop').value = list(recipe.shopping).join('\n');
       $('f-steps').value = list(recipe.steps).join('\n');
@@ -678,7 +1019,7 @@
       importedSource = recipe.source || '';
       $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
     } catch (err) {
-      $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
+      if (run === formRun) $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
     } finally {
       $('getRecipe').disabled = false;
     }
@@ -691,7 +1032,7 @@
     renderFormRate();
   });
   $('addBtn').addEventListener('click', openAdder);
-  $('addClose').addEventListener('click', () => history.back());
+  $('addClose').addEventListener('click', () => closeSheet($('adder')));
   const csv = v => v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   // A first guess from what we know, using the same scoring as the saved dishes. Pans aren't known yet.
   const startingEase = (hands, count) => (hands || count ? Math.max(1, 5 - (hands > 40 ? 2 : hands > 20 ? 1 : 0) - (count > 10 ? 1 : 0)) : 0);
@@ -700,7 +1041,7 @@
   $('addForm').addEventListener('submit', async e => {
     e.preventDefault();
     const title = $('f-title').value.trim();
-    if (!title) return;
+    if (!title || sending) return;
     const fields = {
       title, blurb: $('f-blurb').value.trim(), minutes: Number($('f-minutes').value) || null,
       handsOn: Number($('f-hands').value) || null, serves: $('f-serves').value.trim(), kit: $('f-kit').value.trim(),
@@ -708,28 +1049,42 @@
       shopping: lines($('f-shop').value), steps: lines($('f-steps').value),
       tried: $('f-tried').checked, lexi: $('f-lexi').checked, ...formScores
     };
-    if (editId) {
-      const id = editId;
-      history.back();
-      write(id, fields, 'Saved.');
-      return;
-    }
-    if (!fields.ease) fields.ease = startingEase(fields.handsOn, fields.shopping.length);
-    if (!fields.speed) fields.speed = startingSpeed(fields.minutes);
+    sending = true;
+    $('saveBtn').disabled = true;
     try {
+      if (editId) {
+        // Only what changed is sent, so the rest of the dish keeps following data/recipes.json. The form stays open if the save fails.
+        const id = editId, dish = recipes.get(id);
+        const plain = v => (v == null || v === '' || v === false || v === 0 ? null : Array.isArray(v) ? (v.length ? v.map(String) : null) : typeof v === 'boolean' ? v : String(v));
+        const changed = Object.fromEntries(Object.entries(fields).filter(([k, v]) => JSON.stringify(plain(v)) !== JSON.stringify(plain(dish[k]))));
+        const saved = !Object.keys(changed).length || await write(id, changed, 'Saved.');
+        if (saved && editId === id && !$('adder').hidden) history.back();
+        return;
+      }
+      if (!fields.ease) fields.ease = startingEase(fields.handsOn, fields.shopping.length);
+      if (!fields.speed) fields.speed = startingSpeed(fields.minutes);
       const { id, dish } = await api('', 'POST', { ...fields, source: importedSource });
+      writes++;
       recipes.set(id, dish);
       syncDeck();
       render();
-      history.back();
+      if (history.state && history.state.add && !history.state.edit) history.back();
       toast(title + ' is in the deck.');
     } catch (err) {
       toast('That did not save. Try again.');
+    } finally {
+      sending = false;
+      $('saveBtn').disabled = false;
     }
   });
   addEventListener('keydown', e => {
-    if (openId || shopOpen || !$('adder').hidden) {
-      if (e.key === 'Escape') history.back();
+    if (!$('tonight').hidden) {
+      if (e.key === 'Escape') hideTonight();
+      return;
+    }
+    const sheet = topSheet();
+    if (sheet) {
+      if (e.key === 'Escape') closeSheet(sheet);
       return;
     }
     if (tab !== 'swipe' || e.target.matches('input, textarea')) return;
