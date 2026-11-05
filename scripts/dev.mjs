@@ -14,7 +14,7 @@ const store = {
   setJSON: async (key, value) => { memory.set(key, JSON.stringify(value)); }
 };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
-const PUBLIC = new Set(['/index.html', '/app.js', '/styles.css', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']);
+const PUBLIC = new Set(['/index.html', '/app.js', '/shopping.js', '/styles.css', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']);
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');

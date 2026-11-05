@@ -22,9 +22,10 @@
     <button class="ghost" id="addBtn" type="button">Add a dish</button>
   </header>
 
+  <div class="panel" id="panelSwipe">
   <section class="filter" aria-label="Filter dishes">
     <div class="seg">
-      <button type="button" id="modeAll" aria-pressed="true">All dishes</button>
+      <button type="button" id="modeAll" aria-pressed="true">Everything</button>
       <button type="button" id="modeHave" aria-pressed="false">What we have</button>
     </div>
     <div class="chips" id="chips" hidden></div>
@@ -36,18 +37,31 @@
 
   <main class="stack" id="stack"></main>
 
-  <button type="button" class="short-btn" id="shortBtn" hidden></button>
-
   <div class="actions">
     <button type="button" class="back" id="backBtn" aria-label="Back to the previous dish">Back</button>
     <button type="button" class="no" id="noBtn">Not tonight</button>
     <button type="button" class="yes" id="yesBtn">Shortlist</button>
   </div>
+  </div>
+
+  <div class="panel" id="panelAll" hidden>
+    <div class="field"><label for="search">Search dishes and ingredients</label><input id="search" type="search" autocomplete="off"></div>
+    <p class="count" id="allCount" aria-live="polite"></p>
+    <div class="picks" id="allList"></div>
+  </div>
+
+  <div class="panel" id="panelShort" hidden></div>
+
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" data-tab="swipe">Swipe</button>
+    <button type="button" data-tab="all">All dishes</button>
+    <button type="button" data-tab="short" id="shortTab">Shortlist</button>
+  </nav>
 </div>
 
-<div class="sheet" id="list" hidden></div>
-
 <div class="sheet" id="recipe" hidden></div>
+
+<div class="sheet" id="shop" hidden></div>
 
 <div class="sheet" id="adder" hidden>
   <form class="sheet-in" id="addForm">
@@ -69,6 +83,7 @@
 
 <div class="toast" id="toast" role="status" hidden></div>
 
+<script src="/shopping.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

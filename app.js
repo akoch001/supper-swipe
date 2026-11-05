@@ -18,10 +18,19 @@
   const saveShortlist = () => {
     try { localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist)); } catch (e) { /* the list still works until the page closes */ }
   };
+  const SERVINGS_KEY = 'supper-swipe-servings', TICKS_KEY = 'supper-swipe-ticks';
+  const readStored = (key, fallback) => {
+    try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
+  };
+  const store = (key, value) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* kept until the page closes */ }
+  };
+  const servings = readStored(SERVINGS_KEY, {});
+  let ticks = readStored(TICKS_KEY, { list: '', names: [] });
   let queue = [], passed = [];
   let mode = 'all', easyOnly = false;
   const have = new Set();
-  let openId = null, listOpen = false, loaded = false, failed = '', dragging = false, busy = false;
+  let openId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false, busy = false;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const list = v => Array.isArray(v) ? v : [];
@@ -108,8 +117,6 @@
     }
     $('noBtn').disabled = $('yesBtn').disabled = !queue.length;
     $('backBtn').disabled = !passed.length;
-    $('shortBtn').hidden = !shortlist.length;
-    $('shortBtn').textContent = 'See your shortlist (' + shortlist.length + ')';
   }
 
   function renderFilter() {
@@ -157,44 +164,114 @@
       (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul>' + list(r.shopping).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
       (list(r.steps).length ? '<section><h3>Method</h3><ol>' + list(r.steps).map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></section>' : '') +
       (src ? '<p>' + src + '</p>' : '') +
-      '<div class="sheet-actions"><button type="button" class="primary" data-act="cook">We\'re cooking this tonight</button></div>' +
+      '<div class="sheet-actions"><button type="button" class="primary" data-act="cook">We\'re cooking this tonight</button>' +
+      '<button type="button" class="ghost" data-toggle="' + esc(openId) + '">' + (shortlist.includes(openId) ? 'Remove from shortlist' : 'Add to shortlist') + '</button></div>' +
       '</div>';
   }
 
-  function renderList() {
-    const box = $('list');
-    box.hidden = !listOpen;
-    if (!listOpen) return;
-    box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Keep swiping</button></div>' +
-      '<div><h2>Your shortlist</h2><p class="sub">Open one to see the recipe, then choose it.</p></div>' +
-      '<div class="picks">' + shortlist.map(id => {
-        const r = recipes.get(id);
-        if (!r) return '';
-        const facts = [r.minutes ? r.minutes + ' min' : '', r.handsOn ? r.handsOn + ' hands-on' : '', r.ease ? 'Ease ' + r.ease : ''].filter(Boolean).join(' · ');
-        return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(facts) + '</span></button>' +
-          '<button type="button" class="pick-remove" data-remove="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">Remove</button></div>';
-      }).join('') + '</div></div>';
+  const factsOf = r => [r.minutes ? r.minutes + ' min' : '', r.handsOn ? r.handsOn + ' hands-on' : '', r.ease ? 'Ease ' + r.ease : ''].filter(Boolean).join(' · ');
+  const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
+
+  function renderAll() {
+    const words = $('search').value.toLowerCase().split(/\s+/).filter(Boolean);
+    const found = [...recipes.entries()].filter(([, r]) => {
+      const text = [r.title, r.blurb].concat(list(r.core), list(r.tags), list(r.shopping)).join(' ').toLowerCase();
+      return words.every(w => text.includes(w));
+    }).sort((a, b) => a[1].title.localeCompare(b[1].title));
+    $('allCount').textContent = loaded ? found.length + (found.length === 1 ? ' dish' : ' dishes') : '';
+    $('allList').innerHTML = found.length ? found.map(([id, r]) => {
+      const on = shortlist.includes(id);
+      return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
+        '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? 'On shortlist' : 'Add to shortlist') + '</button></div>';
+    }).join('') : (loaded ? '<p class="empty-note">No dishes match that search.</p>' : '');
   }
 
-  function render() { renderFilter(); renderStack(); renderList(); renderRecipe(); }
+  function renderShortlist() {
+    $('shortTab').textContent = shortlist.length ? 'Shortlist (' + shortlist.length + ')' : 'Shortlist';
+    $('panelShort').innerHTML = '<h2 class="panel-title">Your shortlist</h2>' + (shortlist.length
+      ? '<p class="panel-note">Pick tonight\'s dinner, or plan a few nights and create one shopping list.</p>' +
+        '<div class="picks">' + shortlist.map(id => {
+          const r = recipes.get(id);
+          if (!r) return '';
+          const n = peopleFor(id);
+          return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
+            '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">Remove</button>' +
+            '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">−</button><span>' + n + '</span><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">+</button></span></div></div>';
+        }).join('') + '</div>' +
+        '<div class="sheet-actions"><button type="button" class="primary" data-act="shop">Create shopping list</button><button type="button" class="ghost" data-act="clear">Clear shortlist</button></div>'
+      : '<p class="empty-note">Nothing here yet. Swipe right on a dish, or add one from All dishes.</p>');
+  }
+
+  function shoppingList() {
+    const dishes = shortlist.filter(id => recipes.has(id)).map(id => {
+      const r = recipes.get(id);
+      return { title: r.title, shopping: list(r.shopping), factor: peopleFor(id) / Shopping.servesOf(r) };
+    });
+    return { dishes, aisles: Shopping.build(dishes) };
+  }
+
+  function renderShop() {
+    const box = $('shop');
+    box.hidden = !shopOpen;
+    if (!shopOpen) return;
+    const { dishes, aisles } = shoppingList();
+    const listId = shortlist.map(id => id + ':' + peopleFor(id)).sort().join(',');
+    if (ticks.list !== listId) {
+      ticks = { list: listId, names: [] };
+      store(TICKS_KEY, ticks);
+    }
+    box.innerHTML = '<div class="sheet-in">' +
+      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button><button type="button" class="primary" data-act="share">Share list</button></div>' +
+      '<div><h2>Shopping list</h2><p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p></div>' +
+      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Cupboard staples are listed too, so tick off what you already have.</p>' +
+      aisles.map(a => '<section class="aisle"><h3>' + esc(a.label) + '</h3>' + a.items.map(i =>
+        '<label class="buy"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
+        '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
+        '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span></span></label>').join('') + '</section>').join('') +
+      '</div>';
+  }
+
+  function render() { renderFilter(); renderStack(); renderAll(); renderShortlist(); renderRecipe(); renderShop(); }
+
+  function toggleShortlist(id) {
+    const on = shortlist.includes(id);
+    shortlist = on ? shortlist.filter(x => x !== id) : shortlist.concat(id);
+    passed = passed.filter(x => x !== id);
+    saveShortlist();
+    syncDeck();
+    render();
+    toast(recipes.get(id).title + (on ? ' is off your shortlist' : ' is on your shortlist'));
+  }
 
   // Every sheet is a browser history entry, so the phone's back gesture closes it instead of leaving the app.
   function applyNav(state) {
     const s = state || {};
     openId = s.recipe || null;
-    listOpen = !!s.list;
+    tab = s.tab || 'swipe';
+    shopOpen = !!s.shop;
     $('adder').hidden = !s.add;
-    renderList();
+    $('panelSwipe').hidden = tab !== 'swipe';
+    $('panelAll').hidden = tab !== 'all';
+    $('panelShort').hidden = tab !== 'short';
+    document.querySelectorAll('.tabs button').forEach(b => {
+      if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
     renderRecipe();
+    renderShop();
     if (openId) $('recipe').scrollTop = 0;
+    if (shopOpen) $('shop').scrollTop = 0;
   }
   function go(state) {
     history.pushState(state, '');
     applyNav(state);
   }
-  const openRecipe = id => go({ list: listOpen, recipe: id });
-  const openList = () => go({ list: true });
+  const openRecipe = id => go({ tab, recipe: id });
+  const setTab = t => {
+    if (t !== tab) {
+      go({ tab: t });
+      scrollTo(0, 0);
+    }
+  };
 
   function setStamps(card, dx) {
     card.querySelector('.stamp.yes').style.opacity = Math.max(0, Math.min(1, dx / 90));
@@ -221,7 +298,7 @@
         toast(recipes.get(id).title + ' is on your shortlist');
       }
       render();
-      if (dir > 0 && !queue.length) openList();
+      if (dir > 0 && !queue.length) setTab('short');
     }, ms);
   }
 
@@ -344,7 +421,7 @@
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'again') { queue = shuffle(passed.filter(id => !shortlist.includes(id))); passed = []; renderStack(); }
-    if (b.dataset.act === 'list') openList();
+    if (b.dataset.act === 'list') setTab('short');
     if (b.dataset.act === 'add') openAdder();
   });
   $('recipe').addEventListener('click', e => {
@@ -352,39 +429,81 @@
     if (!b || !openId) return;
     if (b.dataset.act === 'close') { history.back(); return; }
     if (b.dataset.act === 'cook') {
-      shortlist = [];
+      shortlist = shortlist.filter(id => id !== openId);
       saveShortlist();
-      rebuildDeck();
       write(openId, { lastHad: today() }, 'Saved. Enjoy dinner.');
       return;
     }
+    if (b.dataset.toggle) { toggleShortlist(b.dataset.toggle); return; }
     if (b.dataset.rate) {
       const key = b.dataset.rate, val = Number(b.dataset.val);
       const name = SCORES.find(s => s[0] === key)[1];
       write(openId, { [key]: val }, name + ' saved as ' + val);
     }
   });
-  $('list').addEventListener('click', e => {
+  document.querySelector('.tabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-tab]');
+    if (b) setTab(b.dataset.tab);
+  });
+  $('search').addEventListener('input', renderAll);
+  $('allList').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.open) openRecipe(b.dataset.open);
+    if (b.dataset.toggle) toggleShortlist(b.dataset.toggle);
+  });
+  $('panelShort').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.open) openRecipe(b.dataset.open);
+    if (b.dataset.toggle) toggleShortlist(b.dataset.toggle);
+    if (b.dataset.people) {
+      const id = b.dataset.people;
+      servings[id] = Math.min(30, Math.max(1, peopleFor(id) + Number(b.dataset.change)));
+      store(SERVINGS_KEY, servings);
+      renderShortlist();
+    }
+    if (b.dataset.act === 'shop') go({ tab, shop: true });
+    if (b.dataset.act === 'clear') {
+      shortlist = [];
+      passed = [];
+      saveShortlist();
+      rebuildDeck();
+      render();
+      toast('Shortlist cleared');
+    }
+  });
+  $('shop').addEventListener('click', async e => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.act === 'close') history.back();
-    if (b.dataset.open) openRecipe(b.dataset.open);
-    if (b.dataset.remove) {
-      shortlist = shortlist.filter(id => id !== b.dataset.remove);
-      passed = passed.filter(id => id !== b.dataset.remove);
-      saveShortlist();
-      syncDeck();
-      render();
-      if (!shortlist.length) history.back();
+    if (b.dataset.act === 'share') {
+      const text = 'Shopping list\n\n' + Shopping.toText(shoppingList().aisles);
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Shopping list', text });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Shopping list copied');
+      } catch (err) {
+        toast('That could not be copied on this phone.');
+      }
     }
   });
-  $('shortBtn').addEventListener('click', openList);
-  addEventListener('popstate', e => {
-    applyNav(e.state);
-    if (listOpen && !shortlist.length) history.back();
+  $('shop').addEventListener('change', e => {
+    const name = e.target.dataset.tick;
+    if (!name) return;
+    ticks.names = e.target.checked ? ticks.names.concat(name) : ticks.names.filter(n => n !== name);
+    store(TICKS_KEY, ticks);
   });
+  addEventListener('popstate', e => applyNav(e.state));
   function openAdder() {
-    go({ add: true });
+    go({ tab, add: true });
     $('f-title').focus();
   }
   $('addBtn').addEventListener('click', openAdder);
@@ -413,16 +532,17 @@
     }
   });
   addEventListener('keydown', e => {
-    if (openId || listOpen || !$('adder').hidden) {
+    if (openId || shopOpen || !$('adder').hidden) {
       if (e.key === 'Escape') history.back();
       return;
     }
-    if (e.target.matches('input, textarea')) return;
+    if (tab !== 'swipe' || e.target.matches('input, textarea')) return;
     if (e.key === 'ArrowLeft') fling(-1);
     if (e.key === 'ArrowRight') fling(1);
   });
 
   history.replaceState(null, '');
+  applyNav(null);
   render();
 
   load();

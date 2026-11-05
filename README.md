@@ -17,3 +17,7 @@ Start at 5 and take off points. Oven and simmering time cost nothing.
 - Anything hard to find = 1.
 
 The lowest score is 1. Anyone can change a score in the app.
+
+## Shortlist and shopping list
+
+The shortlist and the number of people per dish are kept per phone in the browser. `shopping.js` reads each recipe's ingredient lines, scales them to the number of people, adds up the same ingredient across dishes and sorts them by supermarket aisle. `node scripts/dump_shopping.mjs <file>` writes how every line was read, which is the quickest way to check a new recipe.

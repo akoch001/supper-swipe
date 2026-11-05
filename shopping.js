@@ -1,0 +1,225 @@
+// Turns recipe ingredient lines into one shopping list, added up and sorted by supermarket aisle.
+(function () {
+  const AISLES = [
+    ['veg', 'Vegetables and fruit'],
+    ['herbs', 'Fresh herbs'],
+    ['meat', 'Meat and poultry'],
+    ['fish', 'Fish'],
+    ['dairy', 'Dairy and eggs'],
+    ['bakery', 'Bread and bakery'],
+    ['dry', 'Pasta, rice and noodles'],
+    ['tins', 'Tins, jars and packets'],
+    ['frozen', 'Frozen'],
+    ['sauces', 'Oils, sauces and vinegars'],
+    ['spices', 'Spices, seasoning and baking'],
+    ['drinks', 'Wine and spirits'],
+    ['other', 'Everything else']
+  ];
+
+  const FOODS = {
+    veg: {
+      aubergine: 'Aubergines', cauliflower: 'Cauliflower', carrot: 'Carrots', celery: 'Celery', leek: 'Leeks', onion: 'Onions',
+      'red onion': 'Red onions', 'yellow onion': 'Onions', 'spring onion': 'Spring onions', shallot: 'Shallots', garlic: 'Garlic', ginger: 'Ginger',
+      spinach: 'Spinach', broccoli: 'Broccoli', 'pak choi': 'Pak choi', 'bean sprout': 'Bean sprouts', mango: 'Mangoes', peach: 'Peaches',
+      lemon: 'Lemons', 'lemon juice': 'Lemon juice', lime: 'Limes', 'lime juice': 'Lime juice', orange: 'Oranges', potato: 'Potatoes', pepper: 'Peppers',
+      'red pepper': 'Peppers', 'red chilli': 'Red chillies', 'cherry tomato': 'Cherry tomatoes', tomato: 'Tomatoes',
+      'stir-fry vegetable': 'Stir-fry vegetables', salad: 'Salad', 'green salad': 'Salad', mushroom: 'Mushrooms', courgette: 'Courgettes',
+      cucumber: 'Cucumber', avocado: 'Avocados'
+    },
+    herbs: {
+      basil: 'Basil', 'thai basil': 'Thai basil', coriander: 'Coriander', parsley: 'Parsley', mint: 'Mint', sage: 'Sage',
+      rosemary: 'Rosemary', thyme: 'Thyme', oregano: 'Oregano', 'fresh herbs': 'Mixed herbs'
+    },
+    meat: {
+      chicken: 'Chicken', 'whole chicken': 'Whole chicken', 'chicken breast': 'Chicken breasts', 'chicken thigh': 'Chicken thighs',
+      'chicken thigh mince': 'Chicken thigh mince', bacon: 'Bacon', 'streaky bacon': 'Bacon', 'parma ham': 'Parma ham', ham: 'Ham',
+      beef: 'Beef', mince: 'Mince', 'beef mince': 'Beef mince', pork: 'Pork', 'pork mince': 'Pork mince', lamb: 'Lamb', sausage: 'Sausages',
+      chorizo: 'Chorizo', turkey: 'Turkey', steak: 'Steak'
+    },
+    fish: {
+      salmon: 'Salmon', hake: 'Hake', haddock: 'Haddock', 'smoked haddock': 'Smoked haddock', prawn: 'Prawns', shrimp: 'Prawns',
+      scallop: 'Scallops', cod: 'Cod', tuna: 'Tuna'
+    },
+    dairy: {
+      butter: 'Butter', 'crème fraîche': 'Crème fraîche', cream: 'Cream', mascarpone: 'Mascarpone', milk: 'Milk', egg: 'Eggs', 'egg yolk': 'Eggs',
+      'egg white': 'Eggs', feta: 'Feta', halloumi: 'Halloumi', parmesan: 'Parmesan', cheddar: 'Cheddar', 'gruyère': 'Gruyère', burrata: 'Burrata',
+      yogurt: 'Greek yogurt', cheese: 'Cheese'
+    },
+    bakery: {
+      tortilla: 'Tortillas', bread: 'Bread', ciabatta: 'Ciabatta', 'ciabatta breadcrumb': 'Ciabatta', breadcrumb: 'Breadcrumbs', ladyfinger: 'Ladyfingers'
+    },
+    dry: {
+      rice: 'Rice', 'brown rice': 'Brown rice', noodle: 'Noodles', 'rice noodle': 'Rice noodles', 'vermicelli rice noodle': 'Vermicelli rice noodles',
+      'egg noodle': 'Egg noodles', orzo: 'Orzo', lasagne: 'Lasagne sheets', tortellini: 'Cheese tortellini', pasta: 'Pasta', spaghetti: 'Spaghetti'
+    },
+    tins: {
+      'chopped tomato': 'Tinned chopped tomatoes', 'plum tomato': 'Tinned plum tomatoes', 'roasted red pepper': 'Jarred roasted red peppers',
+      'sun-dried tomato': 'Sun-dried tomatoes', 'tomato paste': 'Tomato paste', 'coconut milk': 'Coconut milk', 'pineapple ring': 'Tinned pineapple rings',
+      olive: 'Olives', caper: 'Capers', 'chicken stock': 'Chicken stock', 'vegetable stock': 'Vegetable stock', 'peanut butter': 'Peanut butter',
+      'crispy onion': 'Crispy onions', prune: 'Prunes', peanut: 'Peanuts', coffee: 'Coffee', lentil: 'Lentils', 'puy lentil': 'Puy lentils',
+      chickpea: 'Chickpeas', bean: 'Beans', 'candied jalapeño': 'Candied jalapeños'
+    },
+    frozen: { edamame: 'Edamame beans' },
+    sauces: {
+      oil: 'Cooking oil', 'olive oil': 'Olive oil', 'sesame oil': 'Sesame oil', 'soy sauce': 'Soy sauce', tamari: 'Tamari', 'fish sauce': 'Fish sauce',
+      'oyster sauce': 'Oyster sauce', 'teriyaki sauce': 'Teriyaki sauce', 'sambal oelek': 'Sambal oelek', 'curry paste': 'Curry paste',
+      'thai curry paste': 'Thai curry paste', 'tamarind paste': 'Tamarind paste', 'balsamic vinegar': 'Balsamic vinegar', 'red wine vinegar': 'Red wine vinegar',
+      'white vinegar': 'White vinegar', honey: 'Honey', mustard: 'Mustard', 'wholegrain mustard': 'Wholegrain mustard'
+    },
+    spices: {
+      salt: 'Salt', 'black pepper': 'Black pepper', 'chilli flake': 'Chilli flakes', 'smoked paprika': 'Smoked paprika', 'ground cumin': 'Ground cumin',
+      'cumin seed': 'Cumin seeds', turmeric: 'Turmeric', 'coriander seed': 'Coriander seeds', 'ground coriander': 'Ground coriander', 'carom seed': 'Carom seeds',
+      'curry powder': 'Curry powder', 'kashmiri chilli powder': 'Kashmiri chilli powder', 'garlic granule': 'Garlic granules', 'fennel seed': 'Fennel seeds',
+      'dried oregano': 'Dried oregano', 'bay leaf': 'Bay leaves', 'bay leaves': 'Bay leaves', 'dried red chilli': 'Dried chillies', sugar: 'Sugar',
+      'brown sugar': 'Brown sugar', cornflour: 'Cornflour', flour: 'Plain flour', 'cardamom pod': 'Cardamom pods', "piment d'espelette": "Piment d'espelette",
+      'sesame seed': 'Sesame seeds', 'cocoa powder': 'Cocoa powder', 'dark chocolate': 'Dark chocolate'
+    },
+    drinks: {
+      'white wine': 'White wine', 'red wine': 'Red wine', 'rice wine': 'Rice wine', sherry: 'Dry sherry', champagne: 'Champagne', vodka: 'Vodka', rum: 'Rum'
+    }
+  };
+
+  const KEYWORDS = [];
+  for (const aisle of Object.keys(FOODS)) {
+    for (const [word, name] of Object.entries(FOODS[aisle])) {
+      KEYWORDS.push({ word, name, aisle, pattern: new RegExp('(?:^|[^\\p{L}])' + word + '(?:s|es)?(?![\\p{L}])', 'u') });
+    }
+  }
+  KEYWORDS.sort((a, b) => b.word.length - a.word.length);
+
+  const FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3 };
+  const UNIT = 'kg|g|l|ml|tbsp|tsp|cm|tins?|cans?|jars?|packs?|bunch(?:es)?|heads?|bulbs?|handfuls?|pinch(?:es)?|strips?|sprigs?|rashers?';
+  const AMOUNT = new RegExp('^(\\d+(?:\\.\\d+)?)?\\s*([½¼¾⅓⅔])?(?:\\s*(?:to|-)\\s*(\\d+(?:\\.\\d+)?))?(?:\\s*(' + UNIT + ')(?![\\p{L}]))?\\s*(?:of\\s+)?', 'u');
+
+  function cleanUnit(qty, unit) {
+    if (!unit) return { qty, unit: '' };
+    if (unit === 'kg') return { qty: qty * 1000, unit: 'g' };
+    if (unit === 'l') return { qty: qty * 1000, unit: 'ml' };
+    if (unit === 'tbsp') return { qty: qty * 3, unit: 'tsp' };
+    if (/^(tin|can)s?$/.test(unit)) return { qty, unit: 'tin' };
+    if (/^jars?$/.test(unit)) return { qty, unit: 'jar' };
+    if (/^packs?$/.test(unit)) return { qty, unit: 'pack' };
+    if (/^bunch/.test(unit)) return { qty, unit: 'bunch' };
+    if (/^heads?$|^bulbs?$/.test(unit)) return { qty, unit: 'head' };
+    if (/^handful/.test(unit)) return { qty, unit: 'handful' };
+    if (/^pinch/.test(unit)) return { qty, unit: 'pinch' };
+    if (/^strip/.test(unit)) return { qty, unit: 'strip' };
+    if (/^sprig/.test(unit)) return { qty, unit: 'sprig' };
+    if (/^rasher/.test(unit)) return { qty, unit: 'rasher' };
+    return { qty, unit };
+  }
+
+  function readAmount(text) {
+    const multiple = /^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(kg|g|l|ml)\b\s*(.*)$/.exec(text);
+    if (multiple) return { ...cleanUnit(Number(multiple[1]) * Number(multiple[2]), multiple[3]), rest: multiple[4] };
+    const words = /^(?:small |large )?(handful|pinch)(?:es)? of (.*)$/.exec(text);
+    if (words) return { ...cleanUnit(1, words[1]), rest: words[2] };
+    const m = AMOUNT.exec(text);
+    if (m[1] || m[2]) {
+      const low = Number(m[1] || 0) + (m[2] ? FRACTIONS[m[2]] : 0);
+      const qty = m[3] ? Number(m[3]) : low;
+      return { ...cleanUnit(qty, m[4]), rest: text.slice(m[0].length) };
+    }
+    const about = /\babout (\d+(?:\.\d+)?)\s*(kg|g|l|ml)\b/.exec(text);
+    if (about) return { ...cleanUnit(Number(about[1]), about[2]), rest: text };
+    return { qty: null, unit: '', rest: text };
+  }
+
+  function identify(text) {
+    const head = text.split(/,| or /)[0].trim();
+    const found = KEYWORDS.find(k => k.pattern.test(head)) || KEYWORDS.find(k => k.pattern.test(text));
+    if (found) return { name: found.name, aisle: found.aisle };
+    const name = head.replace(/^(a few|a little|some) (sprigs of )?/, '') || text;
+    return { name: name.charAt(0).toUpperCase() + name.slice(1), aisle: 'other' };
+  }
+
+  // One line can name more than one thing, such as "Handful of basil and coriander".
+  function parseLine(raw) {
+    const optional = /\(optional\)/i.test(raw);
+    const text = raw.toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/,?\s*to serve\s*$/, '').replace(/\s+/g, ' ').trim().replace(/^about /, '');
+    if (text === 'salt and pepper') {
+      return [{ ...identify('salt'), qty: null, unit: '', optional, raw }, { ...identify('black pepper'), qty: null, unit: '', optional, raw }];
+    }
+    const amount = readAmount(text);
+    const canSplit = amount.qty === null || amount.unit === 'handful';
+    const parts = canSplit ? amount.rest.split(',')[0].split(' and ') : [amount.rest];
+    return parts.map(part => {
+      const item = identify(part.trim());
+      let { qty, unit } = amount;
+      if (item.name === 'Garlic') {
+        if (unit === 'head') { qty *= 10; unit = 'clove'; } else if (unit === '' && qty !== null) unit = 'clove';
+      }
+      if (item.name === 'Coconut milk' && unit === 'tin') { qty *= 400; unit = 'ml'; }
+      if (item.name === 'Celery' && unit === '') unit = 'stick';
+      if (item.name === 'Eggs' && unit === 'tsp') { qty = 1; unit = ''; }
+      if (item.name === 'Oranges' && unit === 'strip') { qty = 1; unit = ''; }
+      // One lemon gives about 3 tbsp of juice and one lime about 2 tbsp.
+      if (item.name === 'Lemon juice') return { ...item, name: 'Lemons', qty: qty / 9, unit: '', optional, raw };
+      if (item.name === 'Lime juice') return { ...item, name: 'Limes', qty: qty / 6, unit: '', optional, raw };
+      return { ...item, qty, unit, optional, raw };
+    });
+  }
+
+  function roundFor(unit, qty) {
+    if (unit === 'g' || unit === 'ml') {
+      const step = qty < 100 ? 5 : 10;
+      return Math.max(step, Math.round(qty / step) * step);
+    }
+    if (unit === 'tsp' || unit === 'cm') return Math.max(0.5, Math.round(qty * 2) / 2);
+    return Math.ceil(qty - 1e-9);
+  }
+
+  function formatAmount(unit, qty) {
+    if (qty === null) return '';
+    const n = roundFor(unit, qty);
+    const plural = (word, count) => count + ' ' + word + (count === 1 ? '' : 's');
+    if (unit === 'g') return n >= 1000 ? (n / 1000) + ' kg' : n + ' g';
+    if (unit === 'ml') return n >= 1000 ? (n / 1000) + ' l' : n + ' ml';
+    if (unit === 'tsp') return n >= 3 ? Math.round((n / 3) * 2) / 2 + ' tbsp' : n + ' tsp';
+    if (unit === 'cm') return n + ' cm';
+    if (unit === 'bunch') return n + (n === 1 ? ' bunch' : ' bunches');
+    if (unit === 'pinch') return n + (n === 1 ? ' pinch' : ' pinches');
+    if (unit) return plural(unit, n);
+    return String(n);
+  }
+
+  // Recipes give a number or wording such as "about 8" or "4 as a side, 2 as a main".
+  const servesOf = dish => {
+    const m = /\d+/.exec(String(dish.serves == null ? '' : dish.serves));
+    return m ? Number(m[0]) : 4;
+  };
+
+  // dishes: [{ title, shopping: [lines], factor }], where factor scales the recipe's amounts.
+  function build(dishes) {
+    const items = new Map();
+    for (const dish of dishes) {
+      for (const line of dish.shopping || []) {
+        for (const part of parseLine(line)) {
+          const qty = part.qty === null ? null : part.qty * (dish.factor || 1);
+          if (!items.has(part.name)) items.set(part.name, { name: part.name, aisle: part.aisle, totals: new Map(), uses: [], someUnmeasured: false, allOptional: true });
+          const item = items.get(part.name);
+          if (qty === null) item.someUnmeasured = true;
+          else item.totals.set(part.unit, (item.totals.get(part.unit) || 0) + qty);
+          if (!part.optional) item.allOptional = false;
+          item.uses.push({ dish: dish.title, amount: formatAmount(part.unit, qty) || 'some', optional: part.optional });
+        }
+      }
+    }
+    return AISLES.map(([key, label]) => ({
+      key,
+      label,
+      items: [...items.values()].filter(i => i.aisle === key).sort((a, b) => a.name.localeCompare(b.name)).map(i => ({
+        name: i.name,
+        amount: [...i.totals].map(([unit, qty]) => formatAmount(unit, qty)).join(' + ') || 'some',
+        optional: i.allOptional,
+        uses: i.uses
+      }))
+    })).filter(a => a.items.length);
+  }
+
+  function toText(aisles) {
+    return aisles.map(a => a.label + '\n' + a.items.map(i => '- ' + i.name + (i.amount === 'some' ? '' : ': ' + i.amount) + (i.optional ? ' (optional)' : '')).join('\n')).join('\n\n');
+  }
+
+  globalThis.Shopping = { parseLine, build, toText, servesOf };
+})();

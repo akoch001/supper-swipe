@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/dishes.test.mjs"
+    "test": "node --test tests/dishes.test.mjs tests/shopping.test.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "11.1.5"
