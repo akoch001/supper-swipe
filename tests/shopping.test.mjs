@@ -64,6 +64,25 @@ test('takes the main ingredients from the full list', () => {
   assert.deepEqual(Shopping.mainsOf(undefined), []);
 });
 
+test('writes a readable PDF that spills onto new pages', () => {
+  const short = Buffer.from(Shopping.toPdf(Shopping.build([{ title: 'A', shopping: ['200ml crème fraîche', '2 (small) onions'], factor: 1 }]), 'Shopping list', 'For: A (one)')).toString('latin1');
+  assert.ok(short.startsWith('%PDF-1.4'));
+  assert.ok(short.includes('(Crème fraîche: 200 ml) Tj'));
+  assert.ok(short.includes('(For: A \\(one\\)) Tj'));
+  assert.ok(short.includes('/Count 1 '));
+  const lines = Array.from({ length: 150 }, (_, i) => '100g item number ' + i);
+  const long = Buffer.from(Shopping.toPdf(Shopping.build([{ title: 'A', shopping: lines, factor: 1 }]), 'Shopping list', 'For: A')).toString('latin1');
+  assert.ok(long.includes('/Count 2 '));
+  const offsets = long.slice(long.lastIndexOf('xref\n0')).match(/\d{10} 00000 n/g).map(x => Number(x.slice(0, 10)));
+  offsets.forEach((at, n) => assert.ok(long.startsWith((n + 1) + ' 0 obj', at)));
+});
+
+test('marks WhatsApp headings only when asked', () => {
+  const aisles = Shopping.build([{ title: 'A', shopping: ['2 eggs'], factor: 1 }]);
+  assert.equal(Shopping.toText(aisles), 'Dairy and eggs\n- Eggs: 2');
+  assert.equal(Shopping.toText(aisles, '*'), '*Dairy and eggs*\n- Eggs: 2');
+});
+
 test('reads servings written in words', () => {
   assert.equal(Shopping.servesOf({ serves: 'about 8' }), 8);
   assert.equal(Shopping.servesOf({ serves: '4 as a side, 2 as a main' }), 4);

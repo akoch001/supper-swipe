@@ -6,6 +6,7 @@
     salmon: 'fish', cod: 'fish', tuna: 'fish', prawns: 'fish', hake: 'fish', haddock: 'fish', scallops: 'fish'
   };
   const SCORES = [['ease', 'Ease'], ['speed', 'Speed'], ['love', 'How much we like it']];
+  const WHATSAPP_LINK_LIMIT = 6000;
   const $ = id => document.getElementById(id);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -17,7 +18,7 @@
   const saveShortlist = () => {
     try { localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist)); } catch (e) { /* the list still works until the page closes */ }
   };
-  const SERVINGS_KEY = 'supper-swipe-servings', TICKS_KEY = 'supper-swipe-ticks';
+  const SERVINGS_KEY = 'supper-swipe-servings', TICKS_KEY = 'supper-swipe-to-buy';
   const readStored = (key, fallback) => {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
   };
@@ -178,10 +179,13 @@
       '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button><button type="button" class="ghost" data-act="edit">Edit</button></div>' +
       '<div><h2>' + esc(r.title) + '</h2><p class="sub">' +
         [r.sample ? 'Sample dish' : '', r.minutes ? r.minutes + ' min' : '', r.serves ? 'Serves ' + r.serves : '', lastHad(r)].filter(Boolean).map(esc).join(' · ') + '</p></div>' +
-      '<div class="status"><div class="seg">' +
+      '<div class="rate">' +
+        '<div class="rate-row"><span>Lexi proof?</span><div class="seg">' +
+        '<button type="button" data-flag="lexi" data-val="1" aria-pressed="' + !!r.lexi + '">Yes</button>' +
+        '<button type="button" data-flag="lexi" data-val="0" aria-pressed="' + !r.lexi + '">No</button></div></div>' +
+        '<div class="rate-row"><span>Made it before?</span><div class="seg">' +
         '<button type="button" data-flag="tried" data-val="1" aria-pressed="' + !!r.tried + '">Tried and tested</button>' +
-        '<button type="button" data-flag="tried" data-val="0" aria-pressed="' + !r.tried + '">To try</button></div>' +
-        '<button type="button" class="chip" data-flag="lexi" data-val="' + (r.lexi ? 0 : 1) + '" aria-pressed="' + !!r.lexi + '">Lexi proof</button></div>' +
+        '<button type="button" data-flag="tried" data-val="0" aria-pressed="' + !r.tried + '">To try</button></div></div></div>' +
       '<section><h3>Rate it</h3><div class="rate">' + rateRows(s => r[s] || 0, 'data-rate') + '</div></section>' +
       (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '') +
       (r.needsRecipe ? '<p class="note">This recipe has not been copied in yet. Use the link below to see it.</p>' : '') +
@@ -250,14 +254,60 @@
       store(TICKS_KEY, ticks);
     }
     box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button><button type="button" class="primary" data-act="share">Share list</button></div>' +
+      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button></div>' +
       '<div><h2>Shopping list</h2><p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p></div>' +
-      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Cupboard staples are listed too, so tick off what you already have.</p>' +
+      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes.</p>' +
+      '<div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
       aisles.map(a => '<section class="aisle"><h3>' + esc(a.label) + '</h3>' + a.items.map(i =>
         '<label class="buy"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
         '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span></span></label>').join('') + '</section>').join('') +
+      '<div class="send-bar"><button type="button" class="primary" data-act="whatsapp">WhatsApp</button><button type="button" class="ghost" data-act="pdf">Download PDF</button><button type="button" class="ghost" data-act="share">Share or copy</button></div>' +
       '</div>';
+    renderShopCount();
+  }
+  const shopNames = () => shoppingList().aisles.flatMap(a => a.items.map(i => i.name));
+  function renderShopCount() {
+    const names = shopNames(), n = names.filter(x => ticks.names.includes(x)).length;
+    $('shopCount').textContent = n + ' of ' + names.length + ' ticked';
+    $('allBtn').textContent = n === names.length ? 'Clear all' : 'Select all';
+  }
+  // What gets sent: the ticked items, or the whole list if nothing is ticked.
+  function listToSend() {
+    const { dishes, aisles } = shoppingList();
+    const ticked = aisles.map(a => ({ ...a, items: a.items.filter(i => ticks.names.includes(i.name)) })).filter(a => a.items.length);
+    return { aisles: ticked.length ? ticked : aisles, forDishes: 'For: ' + dishes.map(d => d.title).join(', ') };
+  }
+  const listText = mark => {
+    const { aisles, forDishes } = listToSend();
+    return 'Shopping list\n' + forDishes + '\n\n' + Shopping.toText(aisles, mark);
+  };
+  async function downloadPdf() {
+    const { aisles, forDishes } = listToSend();
+    const file = new File([Shopping.toPdf(aisles, 'Shopping list', forDishes)], 'shopping-list.pdf', { type: 'application/pdf' });
+    // An iPhone home-screen app can't save a download, so offer its share sheet, which has Save to Files.
+    if (navigator.standalone && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Shopping list' });
+      } catch (err) {
+        if (err && err.name !== 'AbortError') toast('The PDF could not be shared on this phone.');
+      }
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+  }
+  function sendToWhatsApp() {
+    const text = listText('*');
+    const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+    if (url.length <= WHATSAPP_LINK_LIMIT) { open(url, '_blank', 'noopener'); return; }
+    navigator.clipboard.writeText(text).then(() => toast('Too long for a link, so it is copied. Paste it into the chat.'), () => toast('That could not be copied on this phone.'));
+    open('https://wa.me/', '_blank', 'noopener');
   }
 
   function render() { renderFilter(); renderStack(); renderAll(); renderShortlist(); renderRecipe(); renderShop(); }
@@ -531,8 +581,16 @@
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.act === 'close') history.back();
+    if (b.dataset.act === 'all') {
+      const names = shopNames();
+      ticks.names = names.every(n => ticks.names.includes(n)) ? [] : names;
+      store(TICKS_KEY, ticks);
+      renderShop();
+    }
+    if (b.dataset.act === 'whatsapp') sendToWhatsApp();
+    if (b.dataset.act === 'pdf') downloadPdf();
     if (b.dataset.act === 'share') {
-      const text = 'Shopping list\n\n' + Shopping.toText(shoppingList().aisles);
+      const text = listText();
       if (navigator.share) {
         try {
           await navigator.share({ title: 'Shopping list', text });
@@ -554,6 +612,7 @@
     if (!name) return;
     ticks.names = e.target.checked ? ticks.names.concat(name) : ticks.names.filter(n => n !== name);
     store(TICKS_KEY, ticks);
+    renderShopCount();
   });
   addEventListener('popstate', e => applyNav(e.state));
   const formScores = { ease: 0, speed: 0, love: 0 };

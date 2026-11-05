@@ -228,8 +228,73 @@
     })).filter(a => a.items.length);
   }
 
-  function toText(aisles) {
-    return aisles.map(a => a.label + '\n' + a.items.map(i => '- ' + i.name + (i.amount === 'some' ? '' : ': ' + i.amount) + (i.optional ? ' (optional)' : '')).join('\n')).join('\n\n');
+  // A small A4 PDF in two columns. Built by hand so the site needs no library. The PDF standard fonts cover Western European text.
+  const pdfSafe = s => String(s).replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x20-\x7e\xa0-\xff]/g, '?').replace(/[\\()]/g, '\\$&');
+  function wrapWords(text, width) {
+    const out = [];
+    let line = '';
+    for (const word of text.split(' ')) {
+      if (line && (line + ' ' + word).length > width) { out.push(line); line = word; } else line = line ? line + ' ' + word : word;
+    }
+    return out.concat(line);
+  }
+  function toPdf(aisles, title, subtitle) {
+    const W = 595, H = 842, M = 40, GAP = 24, COL = (W - 2 * M - GAP) / 2, SIZE = 10.5, LINE = 14;
+    const pages = [[]];
+    const put = (x, y, size, font, s) => pages[pages.length - 1].push('BT /F' + font + ' ' + size + ' Tf ' + x + ' ' + y + ' Td (' + pdfSafe(s) + ') Tj ET');
+    let y = H - M - 18, col = 0;
+    put(M, y, 20, 2, title);
+    y -= 8;
+    for (const line of wrapWords(subtitle, 105)) { y -= 13; put(M, y, 9.5, 1, line); }
+    y -= 12;
+    let top = y;
+    const fit = needed => {
+      if (y - needed >= M) return;
+      if (col === 0) col = 1;
+      else { pages.push([]); col = 0; top = H - M; }
+      y = top;
+    };
+    for (const aisle of aisles) {
+      const rows = aisle.items.map(i => wrapWords(i.name + (i.amount === 'some' ? '' : ': ' + i.amount) + (i.optional ? ' (optional)' : ''), 44));
+      fit(LINE * (1.5 + rows[0].length) + 6);
+      y -= LINE + 6;
+      put(M + col * (COL + GAP), y, 12, 2, aisle.label);
+      y -= 4;
+      for (const row of rows) {
+        fit(LINE * row.length);
+        const x = M + col * (COL + GAP);
+        y -= LINE;
+        pages[pages.length - 1].push(x + ' ' + (y - 1) + ' 9 9 re S');
+        row.forEach((line, n) => {
+          if (n) y -= LINE;
+          put(x + 15, y, SIZE, 1, line);
+        });
+      }
+    }
+    const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+    const kids = [];
+    for (const page of pages) {
+      const content = '0.6 w\n' + page.join('\n');
+      objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (objects.length + 2) + ' 0 R >>');
+      kids.push(objects.length + ' 0 R');
+      objects.push('<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream');
+    }
+    objects[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';
+    let file = '%PDF-1.4\n';
+    const offsets = objects.map((body, n) => {
+      const at = file.length;
+      file += (n + 1) + ' 0 obj\n' + body + '\nendobj\n';
+      return at;
+    });
+    const xref = file.length;
+    file += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n' + offsets.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('');
+    file += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+    return Uint8Array.from(file, c => c.charCodeAt(0));
+  }
+
+  // headingMark wraps each aisle name, such as * for bold in WhatsApp.
+  function toText(aisles, headingMark = '') {
+    return aisles.map(a => headingMark + a.label + headingMark + '\n' + a.items.map(i => '- ' + i.name + (i.amount === 'some' ? '' : ': ' + i.amount) + (i.optional ? ' (optional)' : '')).join('\n')).join('\n\n');
   }
 
   // The ingredients a dish is really about, for the "What we have" filter and its card colour.
@@ -248,5 +313,5 @@
     return [...new Set(parts.map(p => SAME_MAIN[p.name] || p.name.toLowerCase()))];
   }
 
-  globalThis.Shopping = { parseLine, build, toText, servesOf, mainsOf };
+  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf };
 })();
