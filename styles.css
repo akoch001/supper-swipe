@@ -115,5 +115,19 @@ button { cursor: pointer; }
 .field label { font-weight: 600; }
 .field small { color: var(--muted); }
 .field input, .field textarea { width: 100%; box-sizing: border-box; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+#recipe { z-index: 21; }
+.short-btn { border: 2px solid var(--accent); background: none; color: var(--accent); border-radius: 14px; padding: 10px; font-weight: 700; }
+.picks { display: grid; gap: 10px; }
+.pick { display: flex; align-items: stretch; border-radius: 16px; overflow: hidden; background: var(--card); color: var(--ink); }
+.pick.chicken { --card: var(--c-chicken); --ink: var(--i-chicken); }
+.pick.meat { --card: var(--c-meat); --ink: var(--i-meat); }
+.pick.pork { --card: var(--c-pork); --ink: var(--i-pork); }
+.pick.fish { --card: var(--c-fish); --ink: var(--i-fish); }
+.pick.veg { --card: var(--c-veg); --ink: var(--i-veg); }
+.pick.other { --card: var(--c-other); --ink: var(--i-other); }
+.pick button { background: none; border: 0; color: inherit; }
+.pick-open { flex: 1; min-width: 0; display: grid; gap: 2px; padding: 14px 16px; text-align: left; }
+.pick-open strong { font: 800 1.2rem/1.1 var(--display); overflow-wrap: anywhere; }
+.pick .pick-remove { flex: none; padding: 0 14px; font-size: .85rem; font-weight: 600; border-left: 1.5px solid currentColor; }
 .toast { position: fixed; z-index: 30; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-weight: 600; width: max-content; max-width: 86vw; }
 @media (prefers-reduced-motion: reduce) { .card { transition: none !important; } }

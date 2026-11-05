@@ -44,4 +44,8 @@ test('an added dish appears, can be rated and ignores made-up fields', async () 
   const d = (await dishes(store))['new-id'];
   assert.deepEqual([d.title, d.core[0], d.ingredientCount, d.ease, d.admin], ['Fajitas', 'chicken', 2, 3, undefined]);
   assert.equal((await call('POST', '', store, { title: '  ' })).status, 400);
+  const unsafe = await (await call('POST', '', store, { title: 'Soup', sourceUrl: 'javascript:alert(1)' })).json();
+  assert.equal(unsafe.dish.sourceUrl, null);
+  const linked = await (await call('POST', '', store, { title: 'Stew', sourceUrl: 'https://example.com/stew' })).json();
+  assert.equal(linked.dish.sourceUrl, 'https://example.com/stew');
 });

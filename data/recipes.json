@@ -514,31 +514,49 @@
   "title": "Kedgeree with leeks and spinach"
  },
  "kipfilet-mango-roomsaus": {
-  "blurb": "Open the original for the recipe. It is in Dutch.",
+  "title": "Chicken with mango in a spicy cream sauce",
+  "blurb": "Chicken and sweet mango in a quick, hot cream sauce.",
+  "minutes": 30,
+  "handsOn": 20,
+  "pots": 2,
+  "kit": "1 frying pan, 1 rice pot",
+  "hard": [],
+  "serves": 4,
   "core": [
    "chicken",
-   "mango"
+   "mango",
+   "rice"
   ],
-  "ease": 0,
-  "handsOn": null,
-  "hard": [],
-  "ingredientCount": 0,
-  "kit": "",
-  "lastHad": null,
-  "love": 0,
-  "minutes": null,
-  "needsRecipe": true,
-  "note": "",
-  "pots": null,
-  "sample": false,
-  "serves": null,
-  "shopping": [],
   "source": "Smulweb",
   "sourceUrl": "https://www.smulweb.nl/recepten/1129885/Kipfilet-met-mango-in-een-pittige-roomsaus",
-  "speed": 0,
-  "steps": [],
-  "tags": [],
-  "title": "Chicken with mango in a spicy cream sauce"
+  "note": "Claude wrote this as a starting point because the original recipe could not be read. Adjust it the first time you cook it.",
+  "shopping": [
+   "500g chicken breast, in strips",
+   "1 ripe mango, diced",
+   "1 onion, chopped",
+   "2 garlic cloves, chopped",
+   "1 red chilli, chopped",
+   "1 tbsp curry powder",
+   "200ml cream",
+   "1 tbsp oil",
+   "Rice, to serve",
+   "Salt and pepper"
+  ],
+  "steps": [
+   "Start the rice.",
+   "Brown the chicken in the oil over a high heat, then lift it out.",
+   "Soften the onion, garlic and chilli for 5 minutes, then stir in the curry powder for a minute.",
+   "Add the cream and bring to a gentle simmer.",
+   "Return the chicken and add the mango. Cook for 5 minutes until the chicken is done, season and serve with the rice."
+  ],
+  "ingredientCount": 9,
+  "ease": 4,
+  "speed": 4,
+  "love": 0,
+  "lastHad": null,
+  "sample": false,
+  "needsRecipe": false,
+  "tags": []
  },
  "masala-hake": {
   "blurb": "Silky poached fish in a deep spiced sauce with crispy onions.",
@@ -904,30 +922,97 @@
   "title": "Rosemary chicken meatballs with tomato orzo"
  },
  "scallops-champagne-sage": {
-  "blurb": "Open the original for the recipe.",
+  "title": "Scallops with champagne, sage butter and capers",
+  "blurb": "Seared scallops in a quick, sharp butter sauce.",
+  "minutes": 15,
+  "handsOn": 15,
+  "pots": 1,
+  "kit": "1 large frying pan",
+  "hard": [
+   "fresh scallops"
+  ],
+  "serves": 2,
   "core": [
    "scallops",
    "capers"
   ],
-  "ease": 0,
-  "handsOn": null,
-  "hard": [],
-  "ingredientCount": 0,
-  "kit": "",
-  "lastHad": null,
-  "love": 0,
-  "minutes": null,
-  "needsRecipe": true,
-  "note": "",
-  "pots": null,
-  "sample": false,
-  "serves": null,
-  "shopping": [],
   "source": "delicious.com.au",
   "sourceUrl": "https://www.delicious.com.au/recipes/scallops-champagne-sage-butter-capers/Lkn3rGGl",
-  "speed": 0,
-  "steps": [],
-  "tags": [],
-  "title": "Scallops with champagne, sage butter and capers"
+  "note": "Claude wrote this as a starting point because the original recipe could not be read. Adjust it the first time you cook it.",
+  "shopping": [
+   "12 large scallops",
+   "1 tbsp olive oil",
+   "60g butter",
+   "Small handful of sage leaves",
+   "2 tbsp capers",
+   "100ml champagne or dry sparkling wine",
+   "½ lemon",
+   "Bread or salad, to serve",
+   "Salt and pepper"
+  ],
+  "steps": [
+   "Pat the scallops dry and season them.",
+   "Sear in the oil in a very hot pan for about 90 seconds a side, then lift out.",
+   "Lower the heat, melt the butter and fry the sage and capers until the sage crisps.",
+   "Add the champagne and bubble for 2 minutes until slightly reduced, then squeeze in the lemon.",
+   "Return the scallops, spoon over the sauce and serve straight away."
+  ],
+  "ingredientCount": 8,
+  "ease": 4,
+  "speed": 5,
+  "love": 0,
+  "lastHad": null,
+  "sample": false,
+  "needsRecipe": false,
+  "tags": []
+ },
+ "shrimp-pad-thai": {
+  "title": "Prawn pad thai",
+  "blurb": "Sweet, sour and salty noodles, all made in one wok.",
+  "minutes": 25,
+  "handsOn": 20,
+  "pots": 1,
+  "kit": "1 wok, 1 bowl for the noodles",
+  "hard": [
+   "tamarind paste"
+  ],
+  "serves": 2,
+  "core": [
+   "prawns",
+   "noodles",
+   "eggs"
+  ],
+  "source": "Martha Stewart. The saved link no longer goes to this recipe",
+  "sourceUrl": null,
+  "note": "Claude wrote this as a starting point because the original recipe could not be read. Adjust it the first time you cook it.",
+  "shopping": [
+   "200g flat rice noodles",
+   "300g raw peeled prawns",
+   "2 eggs, beaten",
+   "3 tbsp fish sauce",
+   "2 tbsp tamarind paste",
+   "2 tbsp brown sugar",
+   "2 garlic cloves, chopped",
+   "150g bean sprouts",
+   "4 spring onions, sliced",
+   "50g roasted peanuts, chopped",
+   "1 lime",
+   "2 tbsp oil"
+  ],
+  "steps": [
+   "Soak the noodles in hot water as the packet says, then drain.",
+   "Mix the fish sauce, tamarind and sugar.",
+   "Fry the garlic and prawns in the oil in a hot wok until the prawns turn pink, then push them to one side.",
+   "Scramble the eggs in the space, then add the noodles and sauce and toss for 2 to 3 minutes.",
+   "Toss through the bean sprouts and spring onions. Serve with the peanuts and lime."
+  ],
+  "ingredientCount": 12,
+  "ease": 3,
+  "speed": 4,
+  "love": 0,
+  "lastHad": null,
+  "sample": false,
+  "needsRecipe": false,
+  "tags": []
  }
 }

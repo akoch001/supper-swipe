@@ -12,10 +12,16 @@
 
   const recipes = new Map();
   let saving = 0, lastLoaded = '';
+  const SHORTLIST_KEY = 'supper-swipe-shortlist';
+  let shortlist = [];
+  try { shortlist = JSON.parse(localStorage.getItem(SHORTLIST_KEY)) || []; } catch (e) { shortlist = []; }
+  const saveShortlist = () => {
+    try { localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist)); } catch (e) { /* the list still works until the page closes */ }
+  };
   let queue = [], passed = [];
   let mode = 'all', easyOnly = false;
   const have = new Set();
-  let openId = null, loaded = false, failed = '', dragging = false, busy = false;
+  let openId = null, listOpen = false, loaded = false, failed = '', dragging = false, busy = false;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const list = v => Array.isArray(v) ? v : [];
@@ -58,21 +64,22 @@
   }
 
   function rebuildDeck() {
-    queue = shuffle([...recipes.keys()].filter(id => matches(recipes.get(id))));
+    queue = shuffle([...recipes.keys()].filter(id => matches(recipes.get(id)) && !shortlist.includes(id)));
     passed = [];
   }
   function syncDeck() {
-    queue = queue.filter(id => recipes.has(id) && matches(recipes.get(id)));
+    shortlist = shortlist.filter(id => recipes.has(id));
+    queue = queue.filter(id => recipes.has(id) && matches(recipes.get(id)) && !shortlist.includes(id));
     passed = passed.filter(id => recipes.has(id) && matches(recipes.get(id)));
     for (const id of recipes.keys()) {
-      if (matches(recipes.get(id)) && !queue.includes(id) && !passed.includes(id)) queue.push(id);
+      if (matches(recipes.get(id)) && !queue.includes(id) && !passed.includes(id) && !shortlist.includes(id)) queue.push(id);
     }
   }
 
   function cardHTML(id) {
     const r = recipes.get(id);
     return '<article class="card ' + groupOf(r) + '" data-id="' + esc(id) + '">' +
-      '<span class="stamp yes">Yes</span><span class="stamp no">Not tonight</span>' +
+      '<span class="stamp yes">Shortlist</span><span class="stamp no">Not tonight</span>' +
       '<div class="eyebrow"><span>' + esc(list(r.core).slice(0, 3).join(' · ')) + '</span>' + (r.sample ? '<span class="badge">Sample</span>' : '') + '</div>' +
       '<h2>' + esc(r.title) + '</h2>' +
       (r.blurb ? '<p class="blurb">' + esc(r.blurb) + '</p>' : '') +
@@ -88,6 +95,10 @@
     if (!loaded && !failed) empty = '<div class="empty"><h2>Shuffling the deck</h2><p>Fetching your dishes.</p></div>';
     else if (failed) empty = '<div class="empty"><h2>Your dishes are out of reach</h2><p>' + esc(failed) + '</p></div>';
     else if (!recipes.size) empty = '<div class="empty"><h2>No dishes yet</h2><p>Add your first favourite and it will appear here as a card.</p><button type="button" class="primary" data-act="add">Add a dish</button></div>';
+    else if (!queue.length && shortlist.length) {
+      const more = passed.some(id => !shortlist.includes(id));
+      empty = '<div class="empty"><h2>Time to choose</h2><p>You have ' + shortlist.length + ' on your shortlist.</p><button type="button" class="primary" data-act="list">See your shortlist</button>' + (more ? '<button type="button" class="ghost" data-act="again">Swipe the rest again</button>' : '') + '</div>';
+    }
     else if (!queue.length && !passed.length) empty = '<div class="empty"><h2>Nothing uses all of that</h2><p>Untick an ingredient to see more dishes.</p></div>';
     else if (!queue.length) empty = '<div class="empty"><h2>That was the whole deck</h2><p>Nothing grabbed you? Shuffle and go again.</p><button type="button" class="primary" data-act="again">Go again</button></div>';
     if (empty) stack.innerHTML = empty;
@@ -97,6 +108,8 @@
     }
     $('noBtn').disabled = $('yesBtn').disabled = !queue.length;
     $('backBtn').disabled = !passed.length;
+    $('shortBtn').hidden = !shortlist.length;
+    $('shortBtn').textContent = 'See your shortlist (' + shortlist.length + ')';
   }
 
   function renderFilter() {
@@ -132,7 +145,7 @@
       list(r.hard).length ? 'Hard to find: ' + list(r.hard).join(', ') : ''
     ].filter(Boolean);
     box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Keep swiping</button></div>' +
+      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button></div>' +
       '<div><h2>' + esc(r.title) + '</h2><p class="sub">' +
         [r.sample ? 'Sample dish' : '', r.minutes ? r.minutes + ' min' : '', r.serves ? 'Serves ' + r.serves : '', lastHad(r)].filter(Boolean).map(esc).join(' · ') + '</p></div>' +
       '<div class="rate">' + SCORES.map(s => '<div class="rate-row"><span>' + s[1] + '</span><div class="pips">' +
@@ -148,7 +161,40 @@
       '</div>';
   }
 
-  function render() { renderFilter(); renderStack(); renderRecipe(); }
+  function renderList() {
+    const box = $('list');
+    box.hidden = !listOpen;
+    if (!listOpen) return;
+    box.innerHTML = '<div class="sheet-in">' +
+      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Keep swiping</button></div>' +
+      '<div><h2>Your shortlist</h2><p class="sub">Open one to see the recipe, then choose it.</p></div>' +
+      '<div class="picks">' + shortlist.map(id => {
+        const r = recipes.get(id);
+        if (!r) return '';
+        const facts = [r.minutes ? r.minutes + ' min' : '', r.handsOn ? r.handsOn + ' hands-on' : '', r.ease ? 'Ease ' + r.ease : ''].filter(Boolean).join(' · ');
+        return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(facts) + '</span></button>' +
+          '<button type="button" class="pick-remove" data-remove="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">Remove</button></div>';
+      }).join('') + '</div></div>';
+  }
+
+  function render() { renderFilter(); renderStack(); renderList(); renderRecipe(); }
+
+  // Every sheet is a browser history entry, so the phone's back gesture closes it instead of leaving the app.
+  function applyNav(state) {
+    const s = state || {};
+    openId = s.recipe || null;
+    listOpen = !!s.list;
+    $('adder').hidden = !s.add;
+    renderList();
+    renderRecipe();
+    if (openId) $('recipe').scrollTop = 0;
+  }
+  function go(state) {
+    history.pushState(state, '');
+    applyNav(state);
+  }
+  const openRecipe = id => go({ list: listOpen, recipe: id });
+  const openList = () => go({ list: true });
 
   function setStamps(card, dx) {
     card.querySelector('.stamp.yes').style.opacity = Math.max(0, Math.min(1, dx / 90));
@@ -169,8 +215,13 @@
       busy = false;
       const id = queue.shift();
       passed.push(id);
-      if (dir > 0) openId = id;
+      if (dir > 0 && !shortlist.includes(id)) {
+        shortlist.push(id);
+        saveShortlist();
+        toast(recipes.get(id).title + ' is on your shortlist');
+      }
       render();
+      if (dir > 0 && !queue.length) openList();
     }, ms);
   }
 
@@ -196,7 +247,7 @@
       if (!active) return;
       active = false; dragging = false;
       if (!cancelled && Math.abs(dx) > 90) return fling(dx > 0 ? 1 : -1);
-      if (!cancelled && !moved) { openId = card.dataset.id; renderRecipe(); return; }
+      if (!cancelled && !moved) { openRecipe(card.dataset.id); return; }
       card.style.transition = reduced ? 'none' : 'transform 200ms ease-out';
       card.style.transform = '';
       setStamps(card, 0);
@@ -283,32 +334,61 @@
   $('yesBtn').addEventListener('click', () => fling(1));
   $('backBtn').addEventListener('click', () => {
     if (busy || !passed.length) return;
-    queue.unshift(passed.pop());
+    const id = passed.pop();
+    queue.unshift(id);
+    shortlist = shortlist.filter(x => x !== id);
+    saveShortlist();
     renderStack();
   });
   $('stack').addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
-    if (b.dataset.act === 'again') { queue = shuffle(passed); passed = []; renderStack(); }
+    if (b.dataset.act === 'again') { queue = shuffle(passed.filter(id => !shortlist.includes(id))); passed = []; renderStack(); }
+    if (b.dataset.act === 'list') openList();
     if (b.dataset.act === 'add') openAdder();
   });
   $('recipe').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b || !openId) return;
-    if (b.dataset.act === 'close') { openId = null; $('recipe').scrollTop = 0; renderRecipe(); return; }
-    if (b.dataset.act === 'cook') { write(openId, { lastHad: today() }, 'Saved. Enjoy dinner.'); return; }
+    if (b.dataset.act === 'close') { history.back(); return; }
+    if (b.dataset.act === 'cook') {
+      shortlist = [];
+      saveShortlist();
+      rebuildDeck();
+      write(openId, { lastHad: today() }, 'Saved. Enjoy dinner.');
+      return;
+    }
     if (b.dataset.rate) {
       const key = b.dataset.rate, val = Number(b.dataset.val);
       const name = SCORES.find(s => s[0] === key)[1];
       write(openId, { [key]: val }, name + ' saved as ' + val);
     }
   });
+  $('list').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.act === 'close') history.back();
+    if (b.dataset.open) openRecipe(b.dataset.open);
+    if (b.dataset.remove) {
+      shortlist = shortlist.filter(id => id !== b.dataset.remove);
+      passed = passed.filter(id => id !== b.dataset.remove);
+      saveShortlist();
+      syncDeck();
+      render();
+      if (!shortlist.length) history.back();
+    }
+  });
+  $('shortBtn').addEventListener('click', openList);
+  addEventListener('popstate', e => {
+    applyNav(e.state);
+    if (listOpen && !shortlist.length) history.back();
+  });
   function openAdder() {
-    $('adder').hidden = false;
+    go({ add: true });
     $('f-title').focus();
   }
   $('addBtn').addEventListener('click', openAdder);
-  $('addClose').addEventListener('click', () => { $('adder').hidden = true; });
+  $('addClose').addEventListener('click', () => history.back());
   const csv = v => v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const lines = v => v.split('\n').map(s => s.trim()).filter(Boolean);
   $('addForm').addEventListener('submit', async e => {
@@ -318,7 +398,7 @@
     try {
       const { id, dish } = await api('', 'POST', {
         title, blurb: $('f-blurb').value.trim(), minutes: Number($('f-minutes').value) || null,
-        handsOn: Number($('f-hands').value) || null, kit: $('f-kit').value.trim(),
+        handsOn: Number($('f-hands').value) || null, kit: $('f-kit').value.trim(), sourceUrl: $('f-link').value.trim(),
         core: csv($('f-core').value), tags: csv($('f-tags').value),
         shopping: lines($('f-shop').value), steps: lines($('f-steps').value)
       });
@@ -326,15 +406,15 @@
       syncDeck();
       render();
       e.target.reset();
-      $('adder').hidden = true;
+      history.back();
       toast(title + ' is in the deck.');
     } catch (err) {
       toast('That did not save. Try again.');
     }
   });
   addEventListener('keydown', e => {
-    if (openId || !$('adder').hidden) {
-      if (e.key === 'Escape') { openId = null; $('adder').hidden = true; renderRecipe(); }
+    if (openId || listOpen || !$('adder').hidden) {
+      if (e.key === 'Escape') history.back();
       return;
     }
     if (e.target.matches('input, textarea')) return;
@@ -342,6 +422,7 @@
     if (e.key === 'ArrowRight') fling(1);
   });
 
+  history.replaceState(null, '');
   render();
 
   load();

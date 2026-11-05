@@ -36,12 +36,16 @@
 
   <main class="stack" id="stack"></main>
 
+  <button type="button" class="short-btn" id="shortBtn" hidden></button>
+
   <div class="actions">
     <button type="button" class="back" id="backBtn" aria-label="Back to the previous dish">Back</button>
     <button type="button" class="no" id="noBtn">Not tonight</button>
-    <button type="button" class="yes" id="yesBtn">Yes please</button>
+    <button type="button" class="yes" id="yesBtn">Shortlist</button>
   </div>
 </div>
+
+<div class="sheet" id="list" hidden></div>
 
 <div class="sheet" id="recipe" hidden></div>
 
@@ -57,7 +61,8 @@
     <div class="field"><label for="f-core">Core ingredients</label><input id="f-core"><small>Separate with commas, for example: chicken, rice. These drive the "What we have" filter.</small></div>
     <div class="field"><label for="f-tags">Tags</label><input id="f-tags"><small>Optional, for example: healthy, vegetarian.</small></div>
     <div class="field"><label for="f-shop">Ingredients</label><textarea id="f-shop" rows="6"></textarea><small>One per line.</small></div>
-    <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line.</small></div>
+    <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line. Saved here, so you keep it even if the original site disappears.</small></div>
+    <div class="field"><label for="f-link">Link to the original</label><input id="f-link" type="url" inputmode="url"><small>Optional.</small></div>
     <div class="sheet-actions"><button type="submit" class="primary">Save dish</button></div>
   </form>
 </div>
