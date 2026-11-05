@@ -21,3 +21,7 @@ The lowest score is 1. Anyone can change a score in the app.
 ## Shortlist and shopping list
 
 The shortlist and the number of people per dish are kept per phone in the browser. `shopping.js` reads each recipe's ingredient lines, scales them to the number of people, adds up the same ingredient across dishes and sorts them by supermarket aisle. `node scripts/dump_shopping.mjs <file>` writes how every line was read, which is the quickest way to check a new recipe.
+
+## Adding and editing dishes
+
+"Get recipe" sends the link to `/api/dishes/import`, which reads the schema.org recipe data on the page (`lib/import.mjs`) and fills in the form. Nothing is saved until the form is. Any field can be edited; edits are stored like scores, field by field, and override `data/recipes.json`. The main ingredients are worked out from the ingredient list (`Shopping.mainsOf`). Dishes with `tried: false` are pink and dealt as every third card.

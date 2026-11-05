@@ -31,7 +31,7 @@
     <div class="chips" id="chips" hidden></div>
     <div class="count-row">
       <p class="count" id="count" aria-live="polite"></p>
-      <button type="button" class="chip" id="easyBtn" aria-pressed="false">Easy only</button>
+      <div class="count-chips"><button type="button" class="chip" data-lexi aria-pressed="false">Lexi proof</button><button type="button" class="chip" id="easyBtn" aria-pressed="false">Easy only</button></div>
     </div>
   </section>
 
@@ -46,7 +46,15 @@
 
   <div class="panel" id="panelAll" hidden>
     <div class="field"><label for="search">Search dishes and ingredients</label><input id="search" type="search" autocomplete="off"></div>
-    <p class="count" id="allCount" aria-live="polite"></p>
+    <div class="seg three" id="showSeg">
+      <button type="button" data-show="all" aria-pressed="true">All</button>
+      <button type="button" data-show="tried" aria-pressed="false">Tried and tested</button>
+      <button type="button" data-show="try" aria-pressed="false">To try</button>
+    </div>
+    <div class="count-row">
+      <p class="count" id="allCount" aria-live="polite"></p>
+      <button type="button" class="chip" data-lexi aria-pressed="false">Lexi proof</button>
+    </div>
     <div class="picks" id="allList"></div>
   </div>
 
@@ -66,18 +74,31 @@
 <div class="sheet" id="adder" hidden>
   <form class="sheet-in" id="addForm">
     <div class="sheet-actions"><button type="button" class="ghost" id="addClose">Close</button></div>
-    <h2>Add a dish</h2>
+    <h2 id="formTitle">Add a dish</h2>
+    <div class="field">
+      <label for="f-link">Link to the recipe</label>
+      <div class="link-row"><input id="f-link" inputmode="url" autocomplete="off"><button type="button" class="primary" id="getRecipe">Get recipe</button></div>
+      <small id="linkNote" role="status">Paste a link and the recipe fills in below for you to check. No link? Just type it in.</small>
+    </div>
     <div class="field"><label for="f-title">Name</label><input id="f-title" required></div>
-    <div class="field"><label for="f-blurb">One line about it</label><input id="f-blurb"></div>
-    <div class="field"><label for="f-minutes">Minutes to make</label><input id="f-minutes" type="number" min="1" inputmode="numeric"></div>
-    <div class="field"><label for="f-hands">Minutes hands-on</label><input id="f-hands" type="number" min="1" inputmode="numeric"><small>Time you are actually busy. Oven time does not count.</small></div>
-    <div class="field"><label for="f-kit">Washing up</label><input id="f-kit"><small>For example: 1 frying pan, 1 oven dish.</small></div>
-    <div class="field"><label for="f-core">Core ingredients</label><input id="f-core"><small>Separate with commas, for example: chicken, rice. These drive the "What we have" filter.</small></div>
-    <div class="field"><label for="f-tags">Tags</label><input id="f-tags"><small>Optional, for example: healthy, vegetarian.</small></div>
     <div class="field"><label for="f-shop">Ingredients</label><textarea id="f-shop" rows="6"></textarea><small>One per line.</small></div>
     <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line. Saved here, so you keep it even if the original site disappears.</small></div>
-    <div class="field"><label for="f-link">Link to the original</label><input id="f-link" type="url" inputmode="url"><small>Optional.</small></div>
-    <div class="sheet-actions"><button type="submit" class="primary">Save dish</button></div>
+    <label class="check"><input type="checkbox" id="f-tried">We've made this, so it's tried and tested</label>
+    <label class="check"><input type="checkbox" id="f-lexi">Lexi proof</label>
+    <section><h3>Rate it</h3><div class="rate" id="formRate"></div></section>
+    <details id="moreDetails">
+      <summary>More details (all optional)</summary>
+      <div class="more">
+        <div class="field"><label for="f-blurb">One line about it</label><input id="f-blurb"></div>
+        <div class="field"><label for="f-minutes">Minutes to make</label><input id="f-minutes" type="number" min="1" inputmode="numeric"></div>
+        <div class="field"><label for="f-hands">Minutes hands-on</label><input id="f-hands" type="number" min="1" inputmode="numeric"><small>Time you are actually busy. Oven time does not count.</small></div>
+        <div class="field"><label for="f-serves">Serves</label><input id="f-serves" inputmode="numeric"></div>
+        <div class="field"><label for="f-kit">Washing up</label><input id="f-kit"><small>For example: 1 frying pan, 1 oven dish.</small></div>
+        <div class="field"><label for="f-tags">Tags</label><input id="f-tags"><small>For example: healthy, vegetarian.</small></div>
+        <div class="field"><label for="f-note">Our notes</label><textarea id="f-note" rows="3"></textarea></div>
+      </div>
+    </details>
+    <div class="sheet-actions"><button type="submit" class="primary" id="saveBtn">Save dish</button></div>
   </form>
 </div>
 

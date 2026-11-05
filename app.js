@@ -2,9 +2,8 @@
   const GROUPS = {
     chicken: 'chicken', turkey: 'chicken',
     beef: 'meat', steak: 'meat', mince: 'meat', lamb: 'meat',
-    pork: 'pork', bacon: 'pork', sausage: 'pork', chorizo: 'pork', ham: 'pork',
-    fish: 'fish', salmon: 'fish', cod: 'fish', tuna: 'fish', prawns: 'fish', shrimp: 'fish', hake: 'fish', haddock: 'fish', scallops: 'fish',
-    chickpeas: 'veg', lentils: 'veg', tofu: 'veg', beans: 'veg', vegetables: 'veg', aubergine: 'veg', cauliflower: 'veg', carrots: 'veg', halloumi: 'veg'
+    pork: 'pork', bacon: 'pork', sausages: 'pork', chorizo: 'pork', ham: 'pork', 'parma ham': 'pork',
+    salmon: 'fish', cod: 'fish', tuna: 'fish', prawns: 'fish', hake: 'fish', haddock: 'fish', scallops: 'fish'
   };
   const SCORES = [['ease', 'Ease'], ['speed', 'Speed'], ['love', 'How much we like it']];
   const $ = id => document.getElementById(id);
@@ -28,19 +27,27 @@
   const servings = readStored(SERVINGS_KEY, {});
   let ticks = readStored(TICKS_KEY, { list: '', names: [] });
   let queue = [], passed = [];
-  let mode = 'all', easyOnly = false;
+  let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
-  let openId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false, busy = false;
+  let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false, busy = false;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const list = v => Array.isArray(v) ? v : [];
-  const terms = r => list(r.core).concat(list(r.tags));
-  const groupOf = r => {
-    for (const c of list(r.core)) if (GROUPS[c]) return GROUPS[c];
-    return list(r.tags).includes('vegetarian') ? 'veg' : 'other';
+  const mainCache = new WeakMap();
+  const mains = r => {
+    const lines = list(r.shopping);
+    if (!mainCache.has(lines)) mainCache.set(lines, Shopping.mainsOf(lines));
+    return mainCache.get(lines);
   };
+  const terms = r => mains(r).concat(list(r.tags));
+  const groupOf = r => {
+    for (const c of mains(r)) if (GROUPS[c]) return GROUPS[c];
+    return list(r.tags).includes('dessert') ? 'other' : 'veg';
+  };
+  const colourOf = r => (r.tried ? groupOf(r) : 'to-try');
   const matches = r => {
     if (easyOnly && !((r.ease || 0) >= 3)) return false;
+    if (lexiOnly && !r.lexi) return false;
     if (list(r.tags).includes('dessert') && !(mode === 'have' && have.has('dessert'))) return false;
     return mode === 'all' || [...have].every(t => terms(r).includes(t));
   };
@@ -72,8 +79,19 @@
     toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
   }
 
+  // Every third card is something new to try, for as long as there are any left.
+  function deal(ids) {
+    const fresh = shuffle(ids.filter(id => !recipes.get(id).tried));
+    const known = shuffle(ids.filter(id => recipes.get(id).tried));
+    const out = [];
+    while (fresh.length || known.length) {
+      const wantFresh = (out.length + 1) % 3 === 0;
+      out.push((wantFresh && fresh.length) || !known.length ? fresh.shift() : known.shift());
+    }
+    return out;
+  }
   function rebuildDeck() {
-    queue = shuffle([...recipes.keys()].filter(id => matches(recipes.get(id)) && !shortlist.includes(id)));
+    queue = deal([...recipes.keys()].filter(id => matches(recipes.get(id)) && !shortlist.includes(id)));
     passed = [];
   }
   function syncDeck() {
@@ -87,9 +105,9 @@
 
   function cardHTML(id) {
     const r = recipes.get(id);
-    return '<article class="card ' + groupOf(r) + '" data-id="' + esc(id) + '">' +
+    return '<article class="card ' + colourOf(r) + '" data-id="' + esc(id) + '">' +
       '<span class="stamp yes">Shortlist</span><span class="stamp no">Not tonight</span>' +
-      '<div class="eyebrow"><span>' + esc(list(r.core).slice(0, 3).join(' · ')) + '</span>' + (r.sample ? '<span class="badge">Sample</span>' : '') + '</div>' +
+      '<div class="eyebrow"><span>' + esc(r.tried ? mains(r).slice(0, 3).join(' · ') : 'Try something new') + '</span>' + (r.lexi ? '<span class="badge">Lexi proof</span>' : '') + (r.sample ? '<span class="badge">Sample</span>' : '') + '</div>' +
       '<h2>' + esc(r.title) + '</h2>' +
       (r.blurb ? '<p class="blurb">' + esc(r.blurb) + '</p>' : '') +
       '<div class="meta">' + (r.minutes ? '<span>' + esc(r.minutes) + ' min total</span>' : '') + (r.handsOn ? '<span>' + esc(r.handsOn) + ' min hands-on</span>' : '') + '<span>' + esc(r.needsRecipe ? 'Recipe on the original site' : lastHad(r)) + '</span></div>' +
@@ -108,7 +126,7 @@
       const more = passed.some(id => !shortlist.includes(id));
       empty = '<div class="empty"><h2>Time to choose</h2><p>You have ' + shortlist.length + ' on your shortlist.</p><button type="button" class="primary" data-act="list">See your shortlist</button>' + (more ? '<button type="button" class="ghost" data-act="again">Swipe the rest again</button>' : '') + '</div>';
     }
-    else if (!queue.length && !passed.length) empty = '<div class="empty"><h2>Nothing uses all of that</h2><p>Untick an ingredient to see more dishes.</p></div>';
+    else if (!queue.length && !passed.length) empty = '<div class="empty"><h2>Nothing fits all of that</h2><p>Turn a filter off to see more dishes.</p></div>';
     else if (!queue.length) empty = '<div class="empty"><h2>That was the whole deck</h2><p>Nothing grabbed you? Shuffle and go again.</p><button type="button" class="primary" data-act="again">Go again</button></div>';
     if (empty) stack.innerHTML = empty;
     else {
@@ -137,7 +155,12 @@
     }
     $('count').textContent = label;
     $('easyBtn').setAttribute('aria-pressed', String(easyOnly));
+    document.querySelectorAll('[data-lexi]').forEach(b => b.setAttribute('aria-pressed', String(lexiOnly)));
   }
+
+  const rateRows = (valueOf, attr) => SCORES.map(s => '<div class="rate-row"><span>' + s[1] + '</span><div class="pips">' +
+    [1, 2, 3, 4, 5].map(i => '<button type="button" ' + attr + '="' + s[0] + '" data-val="' + i + '" class="' + (i <= valueOf(s[0]) ? 'on' : '') + '" aria-label="' + s[1] + ' ' + i + ' out of 5">' + i + '</button>').join('') +
+    '</div></div>').join('');
 
   function renderRecipe() {
     const box = $('recipe');
@@ -147,17 +170,19 @@
     const src = /^https?:\/\//.test(r.sourceUrl || '') ? '<a href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">Original recipe' + (r.source ? ' from ' + esc(r.source) : '') + '</a>' : esc(r.source ? 'From: ' + r.source : '');
     const takes = [
       r.kit ? 'Washing up: ' + r.kit : '',
-      r.ingredientCount ? r.ingredientCount + ' ingredients' : '',
+      list(r.shopping).length ? list(r.shopping).length + ' ingredients' : '',
       r.handsOn ? r.handsOn + ' minutes hands-on' : '',
       list(r.hard).length ? 'Hard to find: ' + list(r.hard).join(', ') : ''
     ].filter(Boolean);
     box.innerHTML = '<div class="sheet-in">' +
-      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button></div>' +
+      '<div class="sheet-actions"><button type="button" class="ghost" data-act="close">Back</button><button type="button" class="ghost" data-act="edit">Edit</button></div>' +
       '<div><h2>' + esc(r.title) + '</h2><p class="sub">' +
         [r.sample ? 'Sample dish' : '', r.minutes ? r.minutes + ' min' : '', r.serves ? 'Serves ' + r.serves : '', lastHad(r)].filter(Boolean).map(esc).join(' · ') + '</p></div>' +
-      '<div class="rate">' + SCORES.map(s => '<div class="rate-row"><span>' + s[1] + '</span><div class="pips">' +
-        [1, 2, 3, 4, 5].map(i => '<button type="button" data-rate="' + s[0] + '" data-val="' + i + '" class="' + (i <= (r[s[0]] || 0) ? 'on' : '') + '" aria-label="' + s[1] + ' ' + i + ' out of 5">' + i + '</button>').join('') +
-        '</div></div>').join('') + '</div>' +
+      '<div class="status"><div class="seg">' +
+        '<button type="button" data-flag="tried" data-val="1" aria-pressed="' + !!r.tried + '">Tried and tested</button>' +
+        '<button type="button" data-flag="tried" data-val="0" aria-pressed="' + !r.tried + '">To try</button></div>' +
+        '<button type="button" class="chip" data-flag="lexi" data-val="' + (r.lexi ? 0 : 1) + '" aria-pressed="' + !!r.lexi + '">Lexi proof</button></div>' +
+      '<section><h3>Rate it</h3><div class="rate">' + rateRows(s => r[s] || 0, 'data-rate') + '</div></section>' +
       (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '') +
       (r.needsRecipe ? '<p class="note">This recipe has not been copied in yet. Use the link below to see it.</p>' : '') +
       (takes.length ? '<section><h3>What it takes</h3><ul>' + takes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
@@ -169,21 +194,25 @@
       '</div>';
   }
 
-  const factsOf = r => [r.minutes ? r.minutes + ' min' : '', r.handsOn ? r.handsOn + ' hands-on' : '', r.ease ? 'Ease ' + r.ease : ''].filter(Boolean).join(' · ');
+  const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
 
   function renderAll() {
     const words = $('search').value.toLowerCase().split(/\s+/).filter(Boolean);
+    document.querySelectorAll('[data-show]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.show === allShow)));
     const found = [...recipes.entries()].filter(([, r]) => {
-      const text = [r.title, r.blurb].concat(list(r.core), list(r.tags), list(r.shopping)).join(' ').toLowerCase();
+      if (allShow === 'tried' && !r.tried) return false;
+      if (allShow === 'try' && r.tried) return false;
+      if (lexiOnly && !r.lexi) return false;
+      const text = [r.title, r.blurb].concat(list(r.tags), list(r.shopping)).join(' ').toLowerCase();
       return words.every(w => text.includes(w));
     }).sort((a, b) => a[1].title.localeCompare(b[1].title));
     $('allCount').textContent = loaded ? found.length + (found.length === 1 ? ' dish' : ' dishes') : '';
     $('allList').innerHTML = found.length ? found.map(([id, r]) => {
       const on = shortlist.includes(id);
-      return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
+      return '<div class="pick ' + colourOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
         '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '">' + (on ? 'On shortlist' : 'Add to shortlist') + '</button></div>';
-    }).join('') : (loaded ? '<p class="empty-note">No dishes match that search.</p>' : '');
+    }).join('') : (loaded ? '<p class="empty-note">No dishes match that.</p>' : '');
   }
 
   function renderShortlist() {
@@ -194,7 +223,7 @@
           const r = recipes.get(id);
           if (!r) return '';
           const n = peopleFor(id);
-          return '<div class="pick ' + groupOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
+          return '<div class="pick ' + colourOf(r) + '"><button type="button" class="pick-open" data-open="' + esc(id) + '"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></button>' +
             '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">Remove</button>' +
             '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">−</button><span>' + n + '</span><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">+</button></span></div></div>';
         }).join('') + '</div>' +
@@ -247,7 +276,12 @@
   function applyNav(state) {
     const s = state || {};
     openId = s.recipe || null;
+    editId = s.edit || null;
     tab = s.tab || 'swipe';
+    $('formTitle').textContent = editId ? 'Edit dish' : 'Add a dish';
+    $('saveBtn').textContent = editId ? 'Save changes' : 'Save dish';
+    $('getRecipe').hidden = !!editId;
+    $('linkNote').hidden = !!editId;
     shopOpen = !!s.shop;
     $('adder').hidden = !s.add;
     $('panelSwipe').hidden = tab !== 'swipe';
@@ -407,6 +441,17 @@
     rebuildDeck();
     render();
   });
+  document.querySelectorAll('[data-lexi]').forEach(b => b.addEventListener('click', () => {
+    lexiOnly = !lexiOnly;
+    rebuildDeck();
+    render();
+  }));
+  $('showSeg').addEventListener('click', e => {
+    const b = e.target.closest('[data-show]');
+    if (!b) return;
+    allShow = b.dataset.show;
+    renderAll();
+  });
   $('noBtn').addEventListener('click', () => fling(-1));
   $('yesBtn').addEventListener('click', () => fling(1));
   $('backBtn').addEventListener('click', () => {
@@ -420,7 +465,7 @@
   $('stack').addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
-    if (b.dataset.act === 'again') { queue = shuffle(passed.filter(id => !shortlist.includes(id))); passed = []; renderStack(); }
+    if (b.dataset.act === 'again') { queue = deal(passed.filter(id => !shortlist.includes(id))); passed = []; renderStack(); }
     if (b.dataset.act === 'list') setTab('short');
     if (b.dataset.act === 'add') openAdder();
   });
@@ -428,10 +473,17 @@
     const b = e.target.closest('button');
     if (!b || !openId) return;
     if (b.dataset.act === 'close') { history.back(); return; }
+    if (b.dataset.act === 'edit') { openEditor(openId); return; }
     if (b.dataset.act === 'cook') {
       shortlist = shortlist.filter(id => id !== openId);
       saveShortlist();
-      write(openId, { lastHad: today() }, 'Saved. Enjoy dinner.');
+      write(openId, { lastHad: today(), tried: true }, 'Saved. Enjoy dinner.');
+      return;
+    }
+    if (b.dataset.flag) {
+      const on = b.dataset.val === '1';
+      const said = b.dataset.flag === 'lexi' ? (on ? 'Marked Lexi proof' : 'No longer marked Lexi proof') : (on ? 'Marked tried and tested' : 'Marked to try');
+      write(openId, { [b.dataset.flag]: on }, said);
       return;
     }
     if (b.dataset.toggle) { toggleShortlist(b.dataset.toggle); return; }
@@ -502,29 +554,112 @@
     store(TICKS_KEY, ticks);
   });
   addEventListener('popstate', e => applyNav(e.state));
-  function openAdder() {
-    go({ tab, add: true });
-    $('f-title').focus();
+  const formScores = { ease: 0, speed: 0, love: 0 };
+  let importedSource = '';
+  const renderFormRate = () => { $('formRate').innerHTML = rateRows(s => formScores[s], 'data-form-rate'); };
+  function fillForm(d) {
+    $('f-link').value = d.sourceUrl || '';
+    $('f-title').value = d.title || '';
+    $('f-shop').value = list(d.shopping).join('\n');
+    $('f-steps').value = list(d.steps).join('\n');
+    $('f-tried').checked = !!d.tried;
+    $('f-lexi').checked = !!d.lexi;
+    $('f-blurb').value = d.blurb || '';
+    $('f-minutes').value = d.minutes || '';
+    $('f-hands').value = d.handsOn || '';
+    $('f-serves').value = d.serves == null ? '' : d.serves;
+    $('f-kit').value = d.kit || '';
+    $('f-tags').value = list(d.tags).join(', ');
+    $('f-note').value = d.note || '';
+    SCORES.forEach(s => { formScores[s[0]] = d[s[0]] || 0; });
+    renderFormRate();
+    importedSource = '';
+    $('adder').scrollTop = 0;
   }
+  function openAdder() {
+    fillForm({});
+    $('moreDetails').open = false;
+    $('linkNote').textContent = 'Paste a link and the recipe fills in below for you to check. No link? Just type it in.';
+    go({ tab, add: true });
+    $('f-link').focus();
+  }
+  function openEditor(id) {
+    fillForm(recipes.get(id));
+    $('moreDetails').open = true;
+    go({ tab, recipe: id, add: true, edit: id });
+  }
+  // People share messages such as "Check out this recipe: https://...", so take just the link.
+  function linkIn(value) {
+    const m = /https?:\/\/[^\s<>"]+/.exec(value);
+    if (!m) return '';
+    try {
+      const url = new URL(m[0].replace(/[.,;:!?)]+$/, ''));
+      [...url.searchParams.keys()].filter(k => /^(utm_|playsinline$)/.test(k)).forEach(k => url.searchParams.delete(k));
+      return url.href;
+    } catch (e) {
+      return '';
+    }
+  }
+  $('getRecipe').addEventListener('click', async () => {
+    const url = linkIn($('f-link').value);
+    if (!url) { $('linkNote').textContent = 'Paste a full link first, starting with https://'; return; }
+    $('f-link').value = url;
+    $('getRecipe').disabled = true;
+    $('linkNote').textContent = 'Reading the recipe.';
+    try {
+      const { recipe } = await api('/import', 'POST', { url });
+      $('f-title').value = recipe.title;
+      $('f-shop').value = list(recipe.shopping).join('\n');
+      $('f-steps').value = list(recipe.steps).join('\n');
+      $('f-blurb').value = recipe.blurb || '';
+      $('f-minutes').value = recipe.minutes || '';
+      $('f-serves').value = recipe.serves || '';
+      importedSource = recipe.source || '';
+      $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
+    } catch (err) {
+      $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
+    } finally {
+      $('getRecipe').disabled = false;
+    }
+  });
+  $('formRate').addEventListener('click', e => {
+    const b = e.target.closest('[data-form-rate]');
+    if (!b) return;
+    const key = b.dataset.formRate, val = Number(b.dataset.val);
+    formScores[key] = formScores[key] === val ? 0 : val;
+    renderFormRate();
+  });
   $('addBtn').addEventListener('click', openAdder);
   $('addClose').addEventListener('click', () => history.back());
   const csv = v => v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  // A first guess from what we know, using the same scoring as the saved dishes. Pans aren't known yet.
+  const startingEase = (hands, count) => (hands || count ? Math.max(1, 5 - (hands > 40 ? 2 : hands > 20 ? 1 : 0) - (count > 10 ? 1 : 0)) : 0);
+  const startingSpeed = m => (!m ? 0 : m <= 20 ? 5 : m <= 30 ? 4 : m <= 45 ? 3 : m <= 75 ? 2 : 1);
   const lines = v => v.split('\n').map(s => s.trim()).filter(Boolean);
   $('addForm').addEventListener('submit', async e => {
     e.preventDefault();
     const title = $('f-title').value.trim();
     if (!title) return;
+    const fields = {
+      title, blurb: $('f-blurb').value.trim(), minutes: Number($('f-minutes').value) || null,
+      handsOn: Number($('f-hands').value) || null, serves: $('f-serves').value.trim(), kit: $('f-kit').value.trim(),
+      sourceUrl: linkIn($('f-link').value), tags: csv($('f-tags').value), note: $('f-note').value.trim(),
+      shopping: lines($('f-shop').value), steps: lines($('f-steps').value),
+      tried: $('f-tried').checked, lexi: $('f-lexi').checked, ...formScores
+    };
+    if (editId) {
+      const id = editId;
+      history.back();
+      write(id, fields, 'Saved.');
+      return;
+    }
+    if (!fields.ease) fields.ease = startingEase(fields.handsOn, fields.shopping.length);
+    if (!fields.speed) fields.speed = startingSpeed(fields.minutes);
     try {
-      const { id, dish } = await api('', 'POST', {
-        title, blurb: $('f-blurb').value.trim(), minutes: Number($('f-minutes').value) || null,
-        handsOn: Number($('f-hands').value) || null, kit: $('f-kit').value.trim(), sourceUrl: $('f-link').value.trim(),
-        core: csv($('f-core').value), tags: csv($('f-tags').value),
-        shopping: lines($('f-shop').value), steps: lines($('f-steps').value)
-      });
+      const { id, dish } = await api('', 'POST', { ...fields, source: importedSource });
       recipes.set(id, dish);
       syncDeck();
       render();
-      e.target.reset();
       history.back();
       toast(title + ' is in the deck.');
     } catch (err) {

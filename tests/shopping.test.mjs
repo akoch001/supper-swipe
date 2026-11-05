@@ -51,6 +51,19 @@ test('every line in the real recipes lands in a known aisle', () => {
   assert.deepEqual(unknown, []);
 });
 
+test('reads American measures from imported recipes', () => {
+  assert.deepEqual(read('1.5 lbs boneless, skinless chicken breast, cubed'), [['Chicken breasts', 'meat', 681, 'g']]);
+  assert.deepEqual(read('1 1/2 cups orzo'), [['Orzo', 'dry', 1.5, 'cup']]);
+  assert.deepEqual(read('2 tablespoons olive oil'), [['Olive oil', 'sauces', 6, 'tsp']]);
+  assert.deepEqual(read('4 ounces feta cheese'), [['Feta', 'dairy', 112, 'g']]);
+});
+
+test('takes the main ingredients from the full list', () => {
+  assert.deepEqual(Shopping.mainsOf(['1 onion', '2 tbsp olive oil', '500g chicken thighs', '70g Parma ham (optional)', '200g orzo', '100g feta', '200ml chicken stock', '2 garlic cloves']), ['chicken', 'orzo', 'feta']);
+  assert.deepEqual(Shopping.mainsOf(['400g tin chopped tomatoes', '100g cherry tomatoes']), ['tomatoes']);
+  assert.deepEqual(Shopping.mainsOf(undefined), []);
+});
+
 test('reads servings written in words', () => {
   assert.equal(Shopping.servesOf({ serves: 'about 8' }), 8);
   assert.equal(Shopping.servesOf({ serves: '4 as a side, 2 as a main' }), 4);
