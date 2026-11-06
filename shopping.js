@@ -377,7 +377,8 @@
     'Red wine': 'rode wijn', 'Rice wine': 'rijstwijn', 'Dry sherry': 'droge sherry', 'Champagne': 'champagne', 'Vodka': 'wodka',
     'Rum': 'rum'
   };
-  const ahSearch = name => 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(Object.hasOwn(DUTCH, name) ? DUTCH[name] : name);
+  const dutchName = name => (Object.hasOwn(DUTCH, name) ? DUTCH[name] : name);
+  const ahSearch = name => 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(dutchName(name));
 
-  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch };
+  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch, dutchName };
 })();

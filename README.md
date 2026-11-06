@@ -41,3 +41,7 @@ When a link has no recipe data, or you pick a PDF or photo in the Add a dish for
 ## Matches
 
 Each phone says once whether it is Adam's or Laura's. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish you both like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.
+
+## Sending the list to AH
+
+The shopping list can put its items on an AH account's list, using the API AH's own app uses. There is no official one, so it may stop working. To connect, run `node scripts/ah-login.mjs` on a computer and log in to AH in the window it opens. The tokens stay in Netlify Blobs under `ah/tokens` and never reach the page. Disconnect AH on the shopping list removes them. Nothing here can touch the basket or place an order.
