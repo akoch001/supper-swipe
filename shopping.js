@@ -380,8 +380,8 @@
   const dutchName = name => (Object.hasOwn(DUTCH, name) ? DUTCH[name] : name);
   const ahSearch = name => 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(dutchName(name));
 
-  // Crisp has no web shop and no search address we know of: this opens the app, at whatever screen it likes.
-  const CRISP_APP = 'https://crisp.nl/app';
+  // Crisp has no web shop: this address opens a search in the app. Undocumented, Laura confirmed it on her phone 2026-11-06.
+  const crispSearch = name => 'https://crisp.nl/app/search?query=' + encodeURIComponent(dutchName(name));
 
-  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch, dutchName, CRISP_APP };
+  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch, crispSearch, dutchName };
 })();
