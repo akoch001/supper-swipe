@@ -59,6 +59,8 @@
   };
   const servings = readStored(SERVINGS_KEY, {});
   let ticks = readStored(TICKS_KEY, { list: '', names: [] });
+  const SHOP_KEY = 'supper-swipe-shop';
+  let shop = readStored(SHOP_KEY, 'ah');
   let queue = [], passed = [];
   let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
@@ -457,7 +459,8 @@
       '<div class="sheet-bar"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button><h2>Shopping list</h2></div>' +
       '<div class="sheet-body">' +
       '<p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
-      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn, which also marks it as in your basket. Tap the basket to change that.</p>' +
+      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. ' + (shop === 'crisp' ? 'Tap Crisp on a line to copy its Dutch name and open the app, then paste it into search. That' : 'Tap AH on a line to find it at Albert Heijn, which') + ' also marks it as in your basket. Tap the basket to change that.</p>' +
+      '<div class="rate-row"><span>Shop at</span><div class="seg"><button type="button" data-shop="ah" aria-pressed="' + (shop === 'ah') + '">Albert Heijn</button><button type="button" data-shop="crisp" aria-pressed="' + (shop === 'crisp') + '">Crisp</button></div></div>' +
       '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
       '<div class="bar" id="shopBar" aria-hidden="true"><i></i></div></div>' +
       (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '') +
@@ -465,7 +468,7 @@
         '<label class="buy' + (inBasket(i.name) ? ' in' : '') + '"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
         '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span><span class="buy-in">In basket</span></span>' +
-        '<a class="ah-link" data-ah="' + esc(i.name) + '" href="' + esc(Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at AH">AH</a>' +
+        '<a class="ah-link" data-find="' + esc(i.name) + '" href="' + esc(shop === 'crisp' ? Shopping.CRISP_APP : Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at ' + (shop === 'crisp' ? 'Crisp' : 'AH') + '">' + (shop === 'crisp' ? 'Crisp' : 'AH') + '</a>' +
         '<button type="button" class="basket" data-basket="' + esc(i.name) + '" aria-pressed="' + inBasket(i.name) + '" aria-label="' + esc(i.name) + ' is in the basket">' + ic('bag') + '</button></label>').join('') + '</section>').join('') +
       '<button type="button" class="quiet" id="basketClear" data-act="basket-clear">Empty the basket marks</button>' +
       (ahConnected ? '<button type="button" class="quiet" data-act="ah-off">Disconnect AH</button>' : '') +
@@ -475,6 +478,11 @@
       '<button type="button" class="ghost" data-act="share" aria-label="Share or copy">' + ic('share') + 'Share</button></div>' +
       '</div>';
     renderShopCount();
+  }
+  function copyForCrisp(name) {
+    const dutch = Shopping.dutchName(name);
+    const copied = navigator.clipboard ? navigator.clipboard.writeText(dutch) : Promise.reject(new Error('no clipboard'));
+    copied.then(() => toast('Copied ' + dutch + '. Paste it into Crisp search.'), () => toast('Search Crisp for ' + dutch));
   }
   const shopNames = () => shoppingList().aisles.flatMap(a => a.items.map(i => i.name));
   const inBasket = name => list(ticks.basket).includes(name);
@@ -1053,14 +1061,20 @@
     }
   });
   $('shop').addEventListener('click', async e => {
-    // Marks where you got to on a long list. This can't see the real AH basket, so the button is there to correct it.
-    const opened = e.target.closest('[data-ah]');
+    // Marks where you got to on a long list. This can't see the shop's real basket, so the button is there to correct it.
+    const opened = e.target.closest('[data-find]');
     if (opened) {
-      setBasket(opened.dataset.ah, true);
+      if (shop === 'crisp') copyForCrisp(opened.dataset.find);
+      setBasket(opened.dataset.find, true);
       return;
     }
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.shop) {
+      shop = b.dataset.shop;
+      store(SHOP_KEY, shop);
+      renderShop();
+    }
     if (b.dataset.basket) setBasket(b.dataset.basket, !inBasket(b.dataset.basket));
     if (b.dataset.act === 'basket-clear') {
       ticks.basket = [];

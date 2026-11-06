@@ -130,6 +130,11 @@ test('every ingredient in the real recipes has a Dutch search at AH', () => {
   assert.equal(Shopping.ahSearch('Dragon fruit'), 'https://www.ah.nl/zoeken?query=Dragon%20fruit');
 });
 
+test('Crisp opens the app, and gets the same Dutch name to paste', () => {
+  assert.equal(Shopping.CRISP_APP, 'https://crisp.nl/app');
+  assert.equal(Shopping.dutchName('Tinned plum tomatoes'), 'gepelde tomaten');
+});
+
 test('reads servings written in words', () => {
   assert.equal(Shopping.servesOf({ serves: 'about 8' }), 8);
   assert.equal(Shopping.servesOf({ serves: '4 as a side, 2 as a main' }), 4);

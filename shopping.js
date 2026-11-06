@@ -380,5 +380,8 @@
   const dutchName = name => (Object.hasOwn(DUTCH, name) ? DUTCH[name] : name);
   const ahSearch = name => 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(dutchName(name));
 
-  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch, dutchName };
+  // Crisp has no web shop and no search address we know of: this opens the app, at whatever screen it likes.
+  const CRISP_APP = 'https://crisp.nl/app';
+
+  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch, dutchName, CRISP_APP };
 })();
