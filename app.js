@@ -66,7 +66,7 @@
   // Who this phone belongs to, and what each of you has swiped right on. A dish you both like is a match.
   const WHO_KEY = 'supper-swipe-who', SEEN_KEY = 'supper-swipe-seen-matches', PEOPLE = { adam: 'Adam', laura: 'Laura' };
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
-  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false, ahLast = null;
+  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false;
   if (!Object.hasOwn(PEOPLE, who || '')) who = null;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
@@ -460,7 +460,7 @@
       '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn, which also marks it as in your basket. Tap the basket to change that.</p>' +
       '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
       '<div class="bar" id="shopBar" aria-hidden="true"><i></i></div></div>' +
-      (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '<p class="note" id="ahNote">' + esc(ahNote()) + '</p>') +
+      (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '') +
       aisles.map(a => '<section class="aisle"><h3><span aria-hidden="true">' + (AISLE_EMOJI[a.key] || '🛒') + '</span>' + esc(a.label) + '</h3>' + a.items.map(i =>
         '<label class="buy' + (inBasket(i.name) ? ' in' : '') + '"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
@@ -485,10 +485,6 @@
     b.setAttribute('aria-pressed', on);
     b.closest('.buy').classList.toggle('in', on);
     renderShopCount();
-  }
-  function ahNote() {
-    const when = ahLast && new Date(ahLast.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    return 'Send to AH list appears here once AH is connected from a computer. ' + (ahLast ? 'The last try, ' + when + ', failed: ' + ahLast.problem + '.' : 'No login has reached this site yet.');
   }
   function renderShopCount() {
     const names = shopNames(), n = names.filter(x => ticks.names.includes(x)).length;
@@ -903,7 +899,6 @@
       lastLoaded = fresh;
       likes = answer.likes;
       ahConnected = answer.ah;
-      ahLast = answer.ahLast;
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
