@@ -131,7 +131,7 @@
     }
     return byTitle.get(key);
   }
-  const art = r => '<div class="art" aria-hidden="true"><div class="plate"></div>' + plate(r).map((e, i) => '<span class="sticker s' + (i + 1) + '">' + e + '</span>').join('') + '</div>';
+  const art = r => r.photo ? '<div class="art photo" aria-hidden="true"><img src="' + esc(r.photo) + '" alt=""></div>' : '<div class="art" aria-hidden="true"><div class="plate"></div>' + plate(r).map((e, i) => '<span class="sticker s' + (i + 1) + '">' + e + '</span>').join('') + '</div>';
   const variant = id => 'v' + ([...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % 3);
   const matches = r => {
     if (easyOnly && !((r.ease || 0) >= 3)) return false;
@@ -314,7 +314,7 @@
 
   const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
-  const rowOpen = (id, r) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true"><span>' + plate(r)[0] + '</span></span>' +
+  const rowOpen = (id, r) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true">' + (r.photo ? '<img src="' + esc(r.photo.replace('.jpg', '-thumb.jpg')) + '" alt="" loading="lazy">' : '<span>' + plate(r)[0] + '</span>') + '</span>' +
     '<span class="pick-text"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
 
   function renderAll() {

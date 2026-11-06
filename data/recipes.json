@@ -44,7 +44,8 @@
     ],
     "title": "Aubergine lasagne",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/aubergine-lasagne.jpg"
   },
   "carrot-ginger-soup": {
     "blurb": "Roasted carrots blended with curry spices and coconut milk.",
@@ -88,7 +89,8 @@
     ],
     "title": "Carrot ginger coconut soup",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/carrot-ginger-soup.jpg"
   },
   "chicken-katharina": {
     "blurb": "Leeks, chicken and gruyère in a mustard sauce under a crisp crumb.",
@@ -180,7 +182,8 @@
     "tags": [],
     "title": "Chicken Marbella",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/chicken-marbella.jpg"
   },
   "chicken-satay-noodle-salad": {
     "blurb": "Griddled chicken and pineapple tossed with noodles and fresh herbs.",
@@ -228,7 +231,8 @@
     ],
     "title": "Chicken satay noodle salad",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/chicken-satay-noodle-salad.jpg"
   },
   "classic-tiramisu": {
     "blurb": "Coffee, mascarpone and cocoa. No oven, but it needs time in the fridge.",
@@ -271,7 +275,8 @@
     ],
     "title": "Classic tiramisù",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/classic-tiramisu.jpg"
   },
   "coconut-cauliflower-adobo": {
     "blurb": "Charred cauliflower in a sharp, sweet soy and coconut sauce.",
@@ -320,7 +325,8 @@
     ],
     "title": "Coconut cauliflower adobo",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/coconut-cauliflower-adobo.jpg"
   },
   "greek-sheet-pan-chicken": {
     "blurb": "Lemon and oregano chicken roasted on one tray, with feta on top.",
@@ -372,7 +378,8 @@
     ],
     "title": "Greek sheet pan chicken and potatoes",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/greek-sheet-pan-chicken.jpg"
   },
   "honey-ginger-salmon-bowl": {
     "blurb": "Sticky salmon over rice with a mango and peach salsa.",
@@ -424,7 +431,8 @@
     ],
     "title": "Crispy honey ginger salmon bowl",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/honey-ginger-salmon-bowl.jpg"
   },
   "kedgeree-leeks-spinach": {
     "blurb": "Creamy smoked haddock rice with herbs and boiled eggs.",
@@ -477,7 +485,8 @@
     "tags": [],
     "title": "Kedgeree with leeks and spinach",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/kedgeree-leeks-spinach.jpg"
   },
   "kipfilet-mango-roomsaus": {
     "title": "Chicken with mango in a spicy cream sauce",
@@ -524,7 +533,8 @@
     "needsRecipe": false,
     "tags": [],
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/kipfilet-mango-roomsaus.jpg"
   },
   "masala-hake": {
     "blurb": "Silky poached fish in a deep spiced sauce with crispy onions.",
@@ -582,7 +592,8 @@
     "tags": [],
     "title": "Masala hake with coconut milk",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/masala-hake.jpg"
   },
   "ottolenghi-orzo-prawns": {
     "blurb": "Everything cooks in one pan like a quick risotto.",
@@ -626,7 +637,8 @@
     "tags": [],
     "title": "Orzo with prawns and feta",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/ottolenghi-orzo-prawns.jpg"
   },
   "peanut-noodles-halloumi": {
     "blurb": "Takeaway-style noodles with mango and crisp halloumi.",
@@ -675,7 +687,8 @@
     ],
     "title": "Peanut noodles with halloumi",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/peanut-noodles-halloumi.jpg"
   },
   "puy-lentils-aubergine": {
     "blurb": "Smoky roasted aubergine and burst tomatoes. Keeps for 3 days in the fridge.",
@@ -769,7 +782,8 @@
     ],
     "title": "Creamy red pepper tortellini",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/red-pepper-tortellini.jpg"
   },
   "roast-chicken-lemon-potatoes": {
     "blurb": "Two hours in total, nearly all of it in the oven.",
@@ -810,7 +824,8 @@
     "tags": [],
     "title": "Roast chicken with lemon and rosemary potatoes",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/roast-chicken-lemon-potatoes.jpg"
   },
   "rosemary-chicken-meatballs-orzo": {
     "blurb": "Baked meatballs on a creamy tomato orzo.",
@@ -862,7 +877,8 @@
     "tags": [],
     "title": "Rosemary chicken meatballs with tomato orzo",
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/rosemary-chicken-meatballs-orzo.jpg"
   },
   "scallops-champagne-sage": {
     "title": "Scallops with champagne, sage butter and capers",
@@ -1228,7 +1244,8 @@
     "needsRecipe": false,
     "tags": [],
     "tried": true,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/greek-chicken-couscous.jpg"
   },
   "roasted-pepper-orzo-bake": {
     "title": "Roasted pepper orzo oven dish",
@@ -1358,6 +1375,7 @@
     "needsRecipe": false,
     "tags": [],
     "tried": false,
-    "lexi": false
+    "lexi": false,
+    "photo": "/photos/beef-ragout.jpg"
   }
 }
