@@ -66,7 +66,7 @@
   // Who this phone belongs to, and what each of you has swiped right on. A dish you both like is a match.
   const WHO_KEY = 'supper-swipe-who', SEEN_KEY = 'supper-swipe-seen-matches', PEOPLE = { adam: 'Adam', laura: 'Laura' };
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
-  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false;
+  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false, ahLast = null;
   if (!Object.hasOwn(PEOPLE, who || '')) who = null;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
@@ -449,22 +449,25 @@
     const { dishes, aisles } = shoppingList();
     const listId = shortlist.map(id => id + ':' + peopleFor(id)).sort().join(',');
     if (ticks.list !== listId) {
-      ticks = { list: listId, names: [] };
+      const names = aisles.flatMap(a => a.items.map(i => i.name));
+      ticks = { list: listId, names: [], basket: list(ticks.basket).filter(n => names.includes(n)) };
       store(TICKS_KEY, ticks);
     }
     box.innerHTML = '<div class="sheet-in">' +
       '<div class="sheet-bar"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button><h2>Shopping list</h2></div>' +
       '<div class="sheet-body">' +
       '<p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
-      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn, and the line stays marked so you can see where you got to.</p>' +
+      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn, which also marks it as in your basket. Tap the basket to change that.</p>' +
       '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
       '<div class="bar" id="shopBar" aria-hidden="true"><i></i></div></div>' +
-      (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '') +
+      (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '<p class="note" id="ahNote">' + esc(ahNote()) + '</p>') +
       aisles.map(a => '<section class="aisle"><h3><span aria-hidden="true">' + (AISLE_EMOJI[a.key] || '🛒') + '</span>' + esc(a.label) + '</h3>' + a.items.map(i =>
-        '<label class="buy' + (list(ticks.ah).includes(i.name) ? ' seen' : '') + '"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
+        '<label class="buy' + (inBasket(i.name) ? ' in' : '') + '"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
-        '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span><span class="buy-seen">Opened at AH</span></span>' +
-        '<a class="ah-link" data-ah="' + esc(i.name) + '" href="' + esc(Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at AH">AH</a></label>').join('') + '</section>').join('') +
+        '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span><span class="buy-in">In basket</span></span>' +
+        '<a class="ah-link" data-ah="' + esc(i.name) + '" href="' + esc(Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at AH">AH</a>' +
+        '<button type="button" class="basket" data-basket="' + esc(i.name) + '" aria-pressed="' + inBasket(i.name) + '" aria-label="' + esc(i.name) + ' is in the basket">' + ic('bag') + '</button></label>').join('') + '</section>').join('') +
+      '<button type="button" class="quiet" id="basketClear" data-act="basket-clear">Empty the basket marks</button>' +
       (ahConnected ? '<button type="button" class="quiet" data-act="ah-off">Disconnect AH</button>' : '') +
       '</div>' +
       '<div class="send-bar"><button type="button" class="primary" data-act="whatsapp">' + ic('chat') + 'WhatsApp</button>' +
@@ -474,9 +477,24 @@
     renderShopCount();
   }
   const shopNames = () => shoppingList().aisles.flatMap(a => a.items.map(i => i.name));
+  const inBasket = name => list(ticks.basket).includes(name);
+  function setBasket(name, on) {
+    ticks.basket = list(ticks.basket).filter(n => n !== name).concat(on ? [name] : []);
+    store(TICKS_KEY, ticks);
+    const b = [...$('shop').querySelectorAll('[data-basket]')].find(x => x.dataset.basket === name);
+    b.setAttribute('aria-pressed', on);
+    b.closest('.buy').classList.toggle('in', on);
+    renderShopCount();
+  }
+  function ahNote() {
+    const when = ahLast && new Date(ahLast.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return 'Send to AH list appears here once AH is connected from a computer. ' + (ahLast ? 'The last try, ' + when + ', failed: ' + ahLast.problem + '.' : 'No login has reached this site yet.');
+  }
   function renderShopCount() {
     const names = shopNames(), n = names.filter(x => ticks.names.includes(x)).length;
-    $('shopCount').textContent = n + ' of ' + names.length + ' ticked';
+    const held = names.filter(inBasket).length;
+    $('shopCount').textContent = n + ' of ' + names.length + ' ticked, ' + held + ' in basket';
+    $('basketClear').hidden = !held;
     $('shopBar').style.setProperty('--done', names.length ? (n / names.length).toFixed(3) : '0');
     $('allBtn').textContent = names.length && n === names.length ? 'Clear all' : 'Select all';
   }
@@ -885,6 +903,7 @@
       lastLoaded = fresh;
       likes = answer.likes;
       ahConnected = answer.ah;
+      ahLast = answer.ahLast;
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
@@ -1039,16 +1058,20 @@
     }
   });
   $('shop').addEventListener('click', async e => {
-    // Marks where you got to on a long list. This can't see the AH basket, so it only says the line was opened.
+    // Marks where you got to on a long list. This can't see the real AH basket, so the button is there to correct it.
     const opened = e.target.closest('[data-ah]');
     if (opened) {
-      ticks.ah = list(ticks.ah).concat(opened.dataset.ah);
-      store(TICKS_KEY, ticks);
-      opened.closest('.buy').classList.add('seen');
+      setBasket(opened.dataset.ah, true);
       return;
     }
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.basket) setBasket(b.dataset.basket, !inBasket(b.dataset.basket));
+    if (b.dataset.act === 'basket-clear') {
+      ticks.basket = [];
+      store(TICKS_KEY, ticks);
+      renderShop();
+    }
     if (b.dataset.act === 'close') closeSheet($('shop'));
     if (b.dataset.act === 'all') {
       const names = shopNames();
@@ -1345,7 +1368,10 @@
       ahConnected = true;
       renderShop();
       toast('AH is connected');
-    }, () => toast('AH could not be connected. Run the login again.'));
+    }, () => {
+      toast('AH could not be connected. Run the login again.');
+      load();
+    });
   }
   setInterval(() => { if (!document.hidden) load(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });

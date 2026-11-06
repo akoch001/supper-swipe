@@ -90,3 +90,15 @@ test('refuses empty sends and sends with no connection, and can be disconnected'
   assert.equal(store.m.size, 0);
   assert.equal((await (await call('GET', '', store)).json()).ah, false);
 });
+
+test('a failed login is remembered with AH\'s status and no code, until one works', async () => {
+  const store = memoryStore();
+  fakeAH({ [TOKEN]: [403, {}] });
+  assert.equal((await call('POST', '/ah/connect', store, { code: 'secret-code' })).status, 409);
+  const after = await (await call('GET', '', store)).text();
+  assert.ok(after.includes('AH refused the login: 403'));
+  assert.ok(!after.includes('secret-code'));
+  fakeAH({ [TOKEN]: grant('x') });
+  assert.equal((await call('POST', '/ah/connect', store, { code: 'abc' })).status, 200);
+  assert.equal((await (await call('GET', '', store)).json()).ahLast, null);
+});
