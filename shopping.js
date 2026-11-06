@@ -324,5 +324,60 @@
     return [...new Set(parts.map(p => SAME_MAIN[p.name] || p.name.toLowerCase()))];
   }
 
-  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf };
+  // What to search for at Albert Heijn, whose shelves are in Dutch. A name not listed here is searched for as it is.
+  const DUTCH = {
+    'Aubergines': 'aubergine', 'Cauliflower': 'bloemkool', 'Carrots': 'wortels', 'Celery': 'bleekselderij', 'Leeks': 'prei',
+    'Onions': 'uien', 'Red onions': 'rode ui', 'Spring onions': 'lente-ui', 'Shallots': 'sjalotten', 'Garlic': 'knoflook',
+    'Ginger': 'gember', 'Spinach': 'spinazie', 'Broccoli': 'broccoli', 'Pak choi': 'paksoi', 'Bean sprouts': 'taugé',
+    'Mangoes': 'mango', 'Peaches': 'perziken', 'Lemons': 'citroenen', 'Lemon juice': 'citroensap', 'Limes': 'limoenen',
+    'Lime juice': 'limoensap', 'Oranges': 'sinaasappels', 'Potatoes': 'aardappelen', 'Peppers': 'paprika',
+    'Red chillies': 'rode peper', 'Cherry tomatoes': 'cherrytomaten', 'Tomatoes': 'tomaten', 'Stir-fry vegetables': 'roerbakgroente',
+    'Salad': 'sla', 'Mushrooms': 'champignons', 'Courgettes': 'courgette', 'Cucumber': 'komkommer', 'Avocados': 'avocado',
+    'Radishes': 'radijs', 'Corn': 'mais', 'Apples': 'appels', 'Sweet potatoes': 'zoete aardappel', 'Green beans': 'sperziebonen',
+    'Sugar snap peas': 'sugarsnaps', 'Basil': 'basilicum', 'Thai basil': 'thaise basilicum', 'Coriander': 'koriander',
+    'Parsley': 'peterselie', 'Mint': 'munt', 'Sage': 'salie', 'Rosemary': 'rozemarijn', 'Thyme': 'tijm', 'Oregano': 'oregano',
+    'Mixed herbs': 'verse kruiden', 'Chives': 'bieslook', 'Lime leaves': 'djeroek poeroet', 'Chicken': 'kip',
+    'Whole chicken': 'hele kip', 'Chicken breasts': 'kipfilet', 'Chicken thighs': 'kippendijen', 'Chicken thigh mince': 'kipgehakt',
+    'Bacon': 'spekjes', 'Parma ham': 'parmaham', 'Ham': 'ham', 'Beef': 'rundvlees', 'Mince': 'gehakt', 'Beef mince': 'rundergehakt',
+    'Pork': 'varkensvlees', 'Pork mince': 'varkensgehakt', 'Lamb': 'lamsvlees', 'Sausages': 'worstjes', 'Chorizo': 'chorizo',
+    'Turkey': 'kalkoen', 'Steak': 'biefstuk', 'Salmon': 'zalm', 'Hake': 'heek', 'Haddock': 'schelvis',
+    'Smoked haddock': 'gerookte schelvis', 'Prawns': 'garnalen', 'Scallops': 'coquilles', 'Cod': 'kabeljauw', 'Tuna': 'tonijn',
+    'Butter': 'roomboter', 'Crème fraîche': 'crème fraîche', 'Cream': 'slagroom', 'Mascarpone': 'mascarpone', 'Milk': 'melk',
+    'Eggs': 'eieren', 'Feta': 'feta', 'Halloumi': 'halloumi', 'Parmesan': 'parmezaan', 'Cheddar': 'cheddar', 'Gruyère': 'gruyère',
+    'Burrata': 'burrata', 'Greek yogurt': 'griekse yoghurt', 'Cheese': 'geraspte kaas', 'Tortillas': 'tortilla wraps',
+    'Bread': 'brood', 'Ciabatta': 'ciabatta', 'Breadcrumbs': 'paneermeel', 'Ladyfingers': 'lange vingers',
+    'Garlic bread': 'knoflookbrood', 'Rice': 'rijst', 'Brown rice': 'zilvervliesrijst', 'Noodles': 'noedels',
+    'Rice noodles': 'rijstnoedels', 'Vermicelli rice noodles': 'rijstvermicelli', 'Egg noodles': 'eiernoedels',
+    'Couscous': 'couscous', 'Orzo': 'orzo', 'Lasagne sheets': 'lasagnebladen', 'Cheese tortellini': 'tortellini kaas',
+    'Pasta': 'pasta', 'Spaghetti': 'spaghetti', 'Tinned chopped tomatoes': 'tomatenblokjes',
+    'Tinned plum tomatoes': 'gepelde tomaten', 'Jarred roasted red peppers': 'geroosterde paprika',
+    'Sun-dried tomatoes': 'zongedroogde tomaten', 'Tomato paste': 'tomatenpuree', 'Coconut milk': 'kokosmelk',
+    'Tinned pineapple rings': 'ananas schijven', 'Olives': 'olijven', 'Capers': 'kappertjes', 'Chicken stock': 'kippenbouillon',
+    'Beef stock': 'runderbouillon', 'Vegetable stock': 'groentebouillon', 'Cashews': 'cashewnoten', 'Almonds': 'amandelen',
+    'Peanut butter': 'pindakaas', 'Crispy onions': 'gebakken uitjes', 'Prunes': 'gedroogde pruimen', 'Peanuts': "pinda's",
+    'Coffee': 'koffie', 'Lentils': 'linzen', 'Puy lentils': 'puy linzen', 'Chickpeas': 'kikkererwten', 'Beans': 'bonen',
+    'Candied jalapeños': 'jalapeños', 'Butter beans': 'boterbonen', 'Edamame beans': 'edamame', 'Cooking oil': 'zonnebloemolie',
+    'Olive oil': 'olijfolie', 'Sesame oil': 'sesamolie', 'Soy sauce': 'sojasaus', 'Tamari': 'tamari', 'Fish sauce': 'vissaus',
+    'Oyster sauce': 'oestersaus', 'Teriyaki sauce': 'teriyakisaus', 'Sambal oelek': 'sambal oelek', 'Curry paste': 'currypasta',
+    'Thai curry paste': 'thaise currypasta', 'Tamarind paste': 'tamarinde', 'Balsamic vinegar': 'balsamicoazijn',
+    'Red wine vinegar': 'rode wijnazijn', 'White vinegar': 'witte azijn', 'Hot sauce': 'hete saus', 'Mango chutney': 'mango chutney',
+    'Honey': 'honing', 'Mustard': 'mosterd', 'Wholegrain mustard': 'grove mosterd', 'Rice vinegar': 'rijstazijn',
+    'White wine vinegar': 'witte wijnazijn', 'Cider vinegar': 'appelazijn', 'Sherry vinegar': 'sherryazijn',
+    'Chilli oil': 'chili olie', 'Tomato ketchup': 'tomatenketchup', 'Chilli sauce': 'chilisaus', 'Salt': 'zout',
+    'Black pepper': 'zwarte peper', 'Chilli flakes': 'chilivlokken', 'Smoked paprika': 'gerookt paprikapoeder',
+    'Ground cumin': 'komijnpoeder', 'Cumin seeds': 'komijnzaad', 'Turmeric': 'kurkuma', 'Coriander seeds': 'korianderzaad',
+    'Ground coriander': 'korianderpoeder', 'Carom seeds': 'ajowan', 'Curry powder': 'kerriepoeder',
+    'Kashmiri chilli powder': 'chilipoeder', 'Garlic granules': 'knoflookpoeder', 'Fennel seeds': 'venkelzaad',
+    'Dried oregano': 'gedroogde oregano', 'Bay leaves': 'laurierblad', 'Dried chillies': 'gedroogde chilipeper', 'Sugar': 'suiker',
+    'Brown sugar': 'bruine suiker', 'Cornflour': 'maizena', 'Plain flour': 'bloem', 'Cardamom pods': 'kardemom',
+    "Piment d'espelette": "piment d'espelette", 'Paprika': 'paprikapoeder', 'Cayenne pepper': 'cayennepeper',
+    'Italian seasoning': 'italiaanse kruiden', 'Ground cinnamon': 'kaneel', 'Sesame seeds': 'sesamzaad',
+    'Cocoa powder': 'cacaopoeder', 'Dark chocolate': 'pure chocolade', 'Garlic powder': 'knoflookpoeder',
+    'Onion powder': 'uienpoeder', 'Chilli powder': 'chilipoeder', 'Ground ginger': 'gemberpoeder', 'White wine': 'witte wijn',
+    'Red wine': 'rode wijn', 'Rice wine': 'rijstwijn', 'Dry sherry': 'droge sherry', 'Champagne': 'champagne', 'Vodka': 'wodka',
+    'Rum': 'rum'
+  };
+  const ahSearch = name => 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(Object.hasOwn(DUTCH, name) ? DUTCH[name] : name);
+
+  globalThis.Shopping = { parseLine, build, toText, toPdf, servesOf, mainsOf, ahSearch };
 })();

@@ -77,7 +77,7 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .tabs button[aria-current="page"] { color: var(--fg); }
 .tabs button[aria-current="page"] .tab-ico { background: var(--pop); color: var(--on-pop); }
 .tab-badge { position: absolute; top: -6px; right: 2px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--fg); color: var(--bg); font: 800 .72rem/20px var(--body); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2.5px var(--bg); }
-.tab-match { position: absolute; top: -6px; left: 2px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--pop); color: var(--on-pop); font: 800 .72rem/20px var(--body); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2.5px var(--bg); }
+.tab-match { position: absolute; top: -6px; left: -10px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--pop); color: var(--on-pop); font: 800 .72rem/20px var(--body); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2.5px var(--bg); }
 .tab-badge.bump { animation: bump .5s var(--spring); }
 
 /* Controls */
@@ -330,6 +330,7 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .link-row { display: flex; gap: 8px; }
 .link-row input { flex: 1; min-width: 0; }
 .link-row button { flex: none; }
+.ah-link { flex: none; align-self: center; display: grid; place-items: center; min-width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); color: var(--fg); font-size: .8rem; font-weight: 800; text-decoration: none; }
 .read-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .read-bar i { display: block; height: 100%; width: 4%; border-radius: inherit; background: var(--pop); transition: width 50s cubic-bezier(.1, .7, .3, 1); }
 .read-bar.go i { width: 94%; }

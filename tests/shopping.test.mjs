@@ -120,6 +120,16 @@ test('main ingredients: mince counts as its meat, a spoon of egg white does not 
   assert.deepEqual(Shopping.mainsOf(['2 eggs', 'Salt and pepper, to taste']), ['eggs']);
 });
 
+test('every ingredient in the real recipes has a Dutch search at AH', () => {
+  const dishes = JSON.parse(readFileSync(new URL('../data/recipes.json', import.meta.url), 'utf8'));
+  const names = new Set(Object.values(dishes).flatMap(d => d.shopping).flatMap(Shopping.parseLine).map(p => p.name));
+  const english = n => Shopping.ahSearch(n) === 'https://www.ah.nl/zoeken?query=' + encodeURIComponent(n);
+  const same = ['Broccoli', 'Oregano', 'Chorizo', 'Ham', 'Mascarpone', 'Feta', 'Halloumi', 'Cheddar', 'Burrata', 'Ciabatta', 'Couscous', 'Orzo', 'Pasta', 'Spaghetti'];
+  assert.deepEqual([...names].filter(english).filter(n => n.toLowerCase() !== decodeURIComponent(Shopping.ahSearch(n).split('=')[1]) && !same.includes(n)), []);
+  assert.equal(Shopping.ahSearch('Tinned plum tomatoes'), 'https://www.ah.nl/zoeken?query=gepelde%20tomaten');
+  assert.equal(Shopping.ahSearch('Dragon fruit'), 'https://www.ah.nl/zoeken?query=Dragon%20fruit');
+});
+
 test('reads servings written in words', () => {
   assert.equal(Shopping.servesOf({ serves: 'about 8' }), 8);
   assert.equal(Shopping.servesOf({ serves: '4 as a side, 2 as a main' }), 4);
