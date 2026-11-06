@@ -331,6 +331,9 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .link-row input { flex: 1; min-width: 0; }
 .link-row button { flex: none; }
 .ah-link { flex: none; align-self: center; display: grid; place-items: center; min-width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); color: var(--fg); font-size: .8rem; font-weight: 800; text-decoration: none; }
+.buy-seen { display: none; font-size: .82rem; font-weight: 700; color: var(--pop-1); }
+.buy.seen .buy-seen { display: block; }
+.buy.seen .ah-link { background: var(--pop); color: var(--on-pop); }
 .read-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .read-bar i { display: block; height: 100%; width: 4%; border-radius: inherit; background: var(--pop); transition: width 50s cubic-bezier(.1, .7, .3, 1); }
 .read-bar.go i { width: 94%; }

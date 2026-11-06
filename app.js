@@ -456,15 +456,15 @@
       '<div class="sheet-bar"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button><h2>Shopping list</h2></div>' +
       '<div class="sheet-body">' +
       '<p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
-      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn.</p>' +
+      '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap AH on a line to find it at Albert Heijn, and the line stays marked so you can see where you got to.</p>' +
       '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
       '<div class="bar" id="shopBar" aria-hidden="true"><i></i></div></div>' +
       (ahConnected ? '<button type="button" class="ghost" data-act="ah">' + ic('bag') + 'Send to AH list</button>' : '') +
       aisles.map(a => '<section class="aisle"><h3><span aria-hidden="true">' + (AISLE_EMOJI[a.key] || '🛒') + '</span>' + esc(a.label) + '</h3>' + a.items.map(i =>
-        '<label class="buy"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
+        '<label class="buy' + (list(ticks.ah).includes(i.name) ? ' seen' : '') + '"><input type="checkbox" data-tick="' + esc(i.name) + '"' + (ticks.names.includes(i.name) ? ' checked' : '') + '>' +
         '<span class="buy-text"><span class="buy-line"><span>' + esc(i.name) + (i.optional ? ' (optional)' : '') + '</span><span class="buy-amount">' + esc(i.amount === 'some' ? '' : i.amount) + '</span></span>' +
-        '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span></span>' +
-        '<a class="ah-link" href="' + esc(Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at AH">AH</a></label>').join('') + '</section>').join('') +
+        '<span class="buy-uses">' + esc(i.uses.map(u => u.dish + ': ' + u.amount + (u.optional ? ', optional' : '')).join('; ')) + '</span><span class="buy-seen">Opened at AH</span></span>' +
+        '<a class="ah-link" data-ah="' + esc(i.name) + '" href="' + esc(Shopping.ahSearch(i.name)) + '" target="_blank" rel="noopener" aria-label="Find ' + esc(i.name) + ' at AH">AH</a></label>').join('') + '</section>').join('') +
       (ahConnected ? '<button type="button" class="quiet" data-act="ah-off">Disconnect AH</button>' : '') +
       '</div>' +
       '<div class="send-bar"><button type="button" class="primary" data-act="whatsapp">' + ic('chat') + 'WhatsApp</button>' +
@@ -1039,6 +1039,14 @@
     }
   });
   $('shop').addEventListener('click', async e => {
+    // Marks where you got to on a long list. This can't see the AH basket, so it only says the line was opened.
+    const opened = e.target.closest('[data-ah]');
+    if (opened) {
+      ticks.ah = list(ticks.ah).concat(opened.dataset.ah);
+      store(TICKS_KEY, ticks);
+      opened.closest('.buy').classList.add('seen');
+      return;
+    }
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.act === 'close') closeSheet($('shop'));
