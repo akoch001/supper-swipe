@@ -213,7 +213,9 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 
 /* Lists of dishes */
 .field { display: grid; gap: 5px; }
-.field label { font-weight: 700; }
+.field label, .field-name { font-weight: 700; }
+.photo-row { display: flex; align-items: center; gap: 10px; }
+.photo-row img { flex: none; width: 96px; height: 72px; border-radius: 14px; object-fit: cover; }
 .field small { color: var(--muted); }
 .field input, .field textarea { width: 100%; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; transition: border-color .16s, box-shadow .16s; }
 .field input:focus, .field textarea:focus { outline: none; border-color: var(--pop-1); box-shadow: 0 0 0 4px rgba(255, 77, 141, .18); }

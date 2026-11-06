@@ -136,7 +136,7 @@ test('reads a recipe from the structured data on a page', () => {
     recipeIngredient: ['1 onion', ' ', '200g rice'],
     recipeInstructions: [{ '@type': 'HowToSection', itemListElement: [{ text: 'Chop.' }, { text: 'Cook.' }] }, 'Eat.']
   }] }), 'https://www.example.com/chilli');
-  assert.deepEqual(r, { title: 'Chilli & rice', blurb: 'Hot', minutes: 75, serves: '4', shopping: ['1 onion', '200g rice'], steps: ['Chop.', 'Cook.', 'Eat.'], source: 'example.com' });
+  assert.deepEqual(r, { title: 'Chilli & rice', blurb: 'Hot', minutes: 75, serves: '4', shopping: ['1 onion', '200g rice'], steps: ['Chop.', 'Cook.', 'Eat.'], source: 'example.com', photoUrl: null });
   const numbered = recipeFromHtml(page({ '@type': 'Recipe', name: 'Soup | My Site', recipeInstructions: '1. Chop 2 onions. 2. Cook them.' }), 'https://s.example.com/x');
   assert.deepEqual([numbered.title, numbered.steps, numbered.source], ['Soup', ['Chop 2 onions.', 'Cook them.'], 'example.com']);
   const gas = recipeFromHtml(page({ '@type': 'Recipe', name: 'Roast', recipeInstructions: [{ text: 'Heat oven to 200C/gas 6. Put the chicken in a tin.' }, { text: '1.5 litres of stock go in.' }, 'Divide into 12. Roll each piece.'] }), 'https://example.com/r');

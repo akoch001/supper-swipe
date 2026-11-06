@@ -1126,6 +1126,47 @@
   });
   const formScores = { ease: 0, speed: 0, love: 0 };
   let importedSource = '';
+  // undefined: leave the dish's photo alone. null: remove it. Otherwise the new photo, sent when the dish is saved.
+  let formPhoto;
+  function showFormPhoto(src) {
+    $('photoPreview').hidden = $('photoRemove').hidden = !src;
+    if (src) $('photoPreview').src = src;
+    else $('photoPreview').removeAttribute('src');
+    $('photoPick').textContent = src ? 'Change photo' : 'Add a photo';
+  }
+  const PHOTO_WIDTH = 800, THUMB_SIZE = 120;
+  function photoCanvas(source, x, y, w, h, width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(source, x, y, w, h, 0, 0, width, height);
+    return canvas.toDataURL('image/jpeg', .74);
+  }
+  // Every photo goes through here, whichever way it arrived: a card-sized one, and a small square for the lists.
+  function useFormPhoto(source, box) {
+    const { x, y, w, h } = box || { x: 0, y: 0, w: source.width, h: source.height };
+    const scale = Math.min(1, PHOTO_WIDTH / w), side = Math.min(w, h);
+    const big = photoCanvas(source, x, y, w, h, Math.round(w * scale), Math.round(h * scale));
+    const thumb = photoCanvas(source, x + (w - side) / 2, y + (h - side) / 2, side, side, THUMB_SIZE, THUMB_SIZE);
+    formPhoto = { big: big.split(',')[1], thumb: thumb.split(',')[1] };
+    showFormPhoto(big);
+  }
+  // A dish is saved first, so its photo has an id to go under. Keeps the dish even if the photo fails.
+  async function saveFormPhoto(id) {
+    if (formPhoto === undefined) return true;
+    try {
+      const photo = formPhoto ? (await api('/photos/' + id, 'PUT', formPhoto, 30000)).photo : '';
+      if (!formPhoto) await api('/photos/' + id, 'DELETE');
+      writes++;
+      recipes.get(id).photo = photo;
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
   const renderFormRate = () => { $('formRate').innerHTML = rateRows(s => formScores[s], 'data-form-rate'); };
   function fillForm(d) {
     $('f-link').value = d.sourceUrl || '';
@@ -1144,6 +1185,8 @@
     SCORES.forEach(s => { formScores[s[0]] = d[s[0]] || 0; });
     renderFormRate();
     importedSource = '';
+    formPhoto = undefined;
+    showFormPhoto(d.photo);
     formRun++;
   }
   function openAdder() {
@@ -1182,6 +1225,73 @@
     $('f-tags').value = list(recipe.tags).join(', ');
     importedSource = recipe.source || '';
     $('linkNote').textContent = 'Got it. Check it below, change anything you like, then save.';
+  }
+  // Only ever fills an empty spot, so it can't replace a photo someone chose. A dish simply goes without if this fails.
+  async function photoFromLink(recipe, run) {
+    if (!recipe.photoUrl || !$('photoPreview').hidden) return;
+    try {
+      const res = await fetch('/api/dishes/fetch-photo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: recipe.photoUrl }), signal: AbortSignal.timeout(15000) });
+      if (!res.ok) return;
+      const image = await createImageBitmap(await res.blob());
+      if (run === formRun) useFormPhoto(image);
+    } catch (err) { /* no photo, then */ }
+  }
+  const PDF_JS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/';
+  // Where the pictures sit on a PDF page. PDFs say this by moving a drawing position around, so follow it.
+  async function picturesOn(pdfjs, page, viewport) {
+    const { OPS, Util } = pdfjs, { fnArray, argsArray } = await page.getOperatorList(), stack = [], found = [];
+    let at = [1, 0, 0, 1, 0, 0];
+    const IMAGES = [OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat];
+    fnArray.forEach((op, i) => {
+      if (op === OPS.save) stack.push(at);
+      else if (op === OPS.restore) at = stack.pop() || at;
+      else if (op === OPS.transform) at = Util.transform(at, argsArray[i]);
+      else if (op === OPS.paintFormXObjectBegin) {
+        stack.push(at);
+        if (argsArray[i][0]) at = Util.transform(at, argsArray[i][0]);
+      } else if (op === OPS.paintFormXObjectEnd) at = stack.pop() || at;
+      else if (IMAGES.includes(op)) {
+        const [x0, y0, x1, y1] = viewport.convertToViewportRectangle([at[4], at[5], at[4] + at[0] + at[2], at[5] + at[1] + at[3]]);
+        found.push({ x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) });
+      }
+    });
+    return found;
+  }
+  // The model's box is close, not exact. If it lands on a real picture in the PDF, use that picture's own edges.
+  function snapToPicture(box, pictures, canvas) {
+    const overlap = p => Math.max(0, Math.min(box.x + box.w, p.x + p.w) - Math.max(box.x, p.x)) * Math.max(0, Math.min(box.y + box.h, p.y + p.h) - Math.max(box.y, p.y));
+    // A picture far bigger than the box may be cropped by the PDF, which this can't see, and a page-sized one is a scan.
+    const notAScan = pictures.filter(p => p.w * p.h < canvas.width * canvas.height * .8 && p.w * p.h < box.w * box.h * 1.6);
+    const best = notAScan.reduce((a, p) => (!a || overlap(p) > overlap(a) ? p : a), null);
+    return best && overlap(best) > box.w * box.h * .4 ? best : box;
+  }
+  const boxOn = (recipe, width, height) => {
+    const [left, top, right, bottom] = list(recipe.photoBox);
+    const fine = [left, top, right, bottom].every(n => Number.isFinite(n) && n >= 0 && n <= 1) && (right - left) * (bottom - top) > .04;
+    return fine ? { x: left * width, y: top * height, w: (right - left) * width, h: (bottom - top) * height } : null;
+  };
+  // The file is still here on the page, so the photo is cut from it here. The model only says where it is.
+  async function photoFromFile(recipe, file, run) {
+    if (!recipe.photoPage || !$('photoPreview').hidden) return;
+    try {
+      if (file.type !== 'application/pdf') {
+        const image = await createImageBitmap(file), box = boxOn(recipe, image.width, image.height);
+        if (box && run === formRun) useFormPhoto(image, box);
+        return;
+      }
+      const pdfjs = await import(PDF_JS + 'pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = PDF_JS + 'pdf.worker.min.mjs';
+      const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+      const page = await pdf.getPage(recipe.photoPage);
+      const start = page.getViewport({ scale: 1 }), viewport = page.getViewport({ scale: 1600 / start.width });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      const box = boxOn(recipe, canvas.width, canvas.height);
+      if (box && run === formRun) useFormPhoto(canvas, snapToPicture(box, await picturesOn(pdfjs, page, viewport), canvas));
+      pdf.destroy();
+    } catch (err) { /* no photo, then */ }
   }
   // No one can say how far along the model is, so the bar just creeps towards the end until the answer arrives.
   const busyReading = on => {
@@ -1225,7 +1335,10 @@
         $('linkNote').textContent = 'That page needs the AI reader. This can take a minute.';
         recipe = await readWithAI({ url }, run);
       }
-      if (run === formRun && recipe) fillFromRecipe(recipe);
+      if (run === formRun && recipe) {
+        fillFromRecipe(recipe);
+        await photoFromLink(recipe, run);
+      }
     } catch (err) {
       if (run === formRun) $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
     } finally {
@@ -1261,7 +1374,10 @@
     const run = formRun;
     try {
       const recipe = await readWithAI(isPdf ? { type: file.type, data: await asBase64(file) } : { type: 'image/jpeg', data: await shrinkPhoto(file) }, run);
-      if (run === formRun && recipe) fillFromRecipe(recipe);
+      if (run === formRun && recipe) {
+        fillFromRecipe(recipe);
+        await photoFromFile(recipe, file, run);
+      }
     } catch (err) {
       if (run !== formRun) return;
       $('linkNote').textContent = err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
@@ -1269,6 +1385,21 @@
     } finally {
       busyReading(false);
     }
+  });
+  $('photoPick').addEventListener('click', () => $('f-photo').click());
+  $('f-photo').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      useFormPhoto(await createImageBitmap(file));
+    } catch (err) {
+      toast('That photo could not be read. Try a different one.');
+    }
+  });
+  $('photoRemove').addEventListener('click', () => {
+    formPhoto = null;
+    showFormPhoto('');
   });
   $('formRate').addEventListener('click', e => {
     const b = e.target.closest('[data-form-rate]');
@@ -1304,7 +1435,10 @@
         const plain = v => (v == null || v === '' || v === false || v === 0 ? null : Array.isArray(v) ? (v.length ? v.map(String) : null) : typeof v === 'boolean' ? v : String(v));
         const changed = Object.fromEntries(Object.entries(fields).filter(([k, v]) => JSON.stringify(plain(v)) !== JSON.stringify(plain(dish[k]))));
         const saved = !Object.keys(changed).length || await write(id, changed, 'Saved.');
-        if (saved && editId === id && !$('adder').hidden) history.back();
+        if (!saved) return;
+        if (!await saveFormPhoto(id)) toast('Saved, but the photo did not. Try it again.');
+        render();
+        if (editId === id && !$('adder').hidden) history.back();
         return;
       }
       if (!fields.ease) fields.ease = startingEase(fields.handsOn, fields.shopping.length);
@@ -1312,10 +1446,11 @@
       const { id, dish } = await api('', 'POST', { ...fields, source: importedSource });
       writes++;
       recipes.set(id, dish);
+      const photoSaved = await saveFormPhoto(id);
       syncDeck();
       render();
       if (history.state && history.state.add && !history.state.edit) history.back();
-      toast(title + ' is in the deck.');
+      toast(photoSaved ? title + ' is in the deck.' : title + ' is in the deck, but the photo did not save.');
     } catch (err) {
       toast('That did not save. Try again.');
     } finally {

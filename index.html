@@ -116,6 +116,15 @@
         <div class="read-bar" id="readBar" role="progressbar" aria-label="Reading the recipe" hidden><i></i></div>
         <small id="linkNote" role="status">Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.</small>
       </div>
+      <div class="field">
+        <span class="field-name">Photo</span>
+        <div class="photo-row">
+          <img id="photoPreview" alt="" hidden>
+          <button type="button" class="ghost" id="photoPick">Add a photo</button>
+          <button type="button" class="quiet" id="photoRemove" hidden>Remove</button>
+        </div>
+        <input type="file" id="f-photo" accept="image/*" hidden>
+      </div>
       <div class="field"><label for="f-title">Name</label><input id="f-title" required></div>
       <div class="field"><label for="f-shop">Ingredients</label><textarea id="f-shop" rows="6"></textarea><small>One per line.</small></div>
       <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line. Saved here, so you keep it even if the original site disappears.</small></div>
