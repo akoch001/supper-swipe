@@ -37,3 +37,7 @@ The site sits behind Netlify's site-wide password, which also covers `/api`. The
 ## Reading a recipe with AI
 
 When a link has no recipe data, or you pick a PDF or photo in the Add a dish form, an AI model reads it and fills in the form for you to check. It needs `ANTHROPIC_API_KEY` set in Netlify's environment variables. Without one, the form says AI reading is not switched on and everything else works as before. Each reading is paid for on that API account, so set a monthly spending limit there. The model is named in `lib/reader.mjs`. The work runs in a background function, `netlify/functions/read-recipe.mjs`, because it can outlast a normal request.
+
+## Matches
+
+Each phone says once whether it is Adam's or Laura's. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish you both like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.

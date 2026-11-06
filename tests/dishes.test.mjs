@@ -8,7 +8,8 @@ function memoryStore() {
   return {
     list: async ({ prefix }) => ({ blobs: [...m.keys()].filter(k => k.startsWith(prefix)).map(key => ({ key })) }),
     get: async key => (m.has(key) ? JSON.parse(m.get(key)) : null),
-    setJSON: async (key, v) => { m.set(key, JSON.stringify(v)); }
+    setJSON: async (key, v) => { m.set(key, JSON.stringify(v)); },
+    delete: async key => { m.delete(key); }
   };
 }
 // Like the real store: slow, and able to refuse a write when the blob has changed since it was read.
@@ -66,6 +67,22 @@ test('an unchanged deck reads the same every time', async () => {
   const reads = new Set();
   for (let i = 0; i < 6; i++) reads.add(await (await call('GET', '', store)).text());
   assert.equal(reads.size, 1);
+});
+
+test('likes are kept per person and can be taken back', async () => {
+  const store = memoryStore();
+  const likes = async () => (await (await call('GET', '', store)).json()).likes;
+  assert.deepEqual(await likes(), { adam: [], laura: [] });
+  assert.equal((await call('PUT', '/likes/adam/orzo', store)).status, 200);
+  assert.equal((await call('PUT', '/likes/laura/orzo', store)).status, 200);
+  assert.equal((await call('PUT', '/likes/adam/orzo', store)).status, 200);
+  assert.deepEqual(await likes(), { adam: ['orzo'], laura: ['orzo'] });
+  assert.equal((await call('DELETE', '/likes/adam/orzo', store)).status, 200);
+  assert.deepEqual(await likes(), { adam: [], laura: ['orzo'] });
+  assert.equal((await call('PUT', '/likes/adam/nope', store)).status, 404);
+  assert.equal((await call('PUT', '/likes/adam/__proto__', store)).status, 404);
+  assert.equal((await call('PUT', '/likes/someone/orzo', store)).status, 400);
+  assert.deepEqual(Object.keys(await dishes(store)), ['orzo']);
 });
 
 test('long recipes are kept whole', async () => {

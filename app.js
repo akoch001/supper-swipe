@@ -63,6 +63,11 @@
   let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
   let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false;
+  // Who this phone belongs to, and what each of you has swiped right on. A dish you both like is a match.
+  const WHO_KEY = 'supper-swipe-who', SEEN_KEY = 'supper-swipe-seen-matches', PEOPLE = { adam: 'Adam', laura: 'Laura' };
+  const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
+  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine';
+  if (!Object.hasOwn(PEOPLE, who || '')) who = null;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
 
@@ -330,11 +335,64 @@
     }).join('') : (loaded ? '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">🔍</span>No dishes match that.</p>' : '');
   }
 
+  const otherName = () => PEOPLE[who === 'laura' ? 'adam' : 'laura'];
+  const isMatch = id => likes.adam.includes(id) && likes.laura.includes(id);
+  const matchIds = () => likes.adam.filter(id => likes.laura.includes(id) && recipes.has(id));
+  async function sendLike(person, id, method) {
+    const path = '/likes/' + person + '/' + encodeURIComponent(id);
+    likeSaves++;
+    try {
+      await api(path, method).catch(async () => {
+        await new Promise(done => setTimeout(done, 3000));
+        return api(path, method);
+      });
+    } catch (e) {
+      toast('Could not save that for ' + otherName() + ' to see. Check your connection.');
+    } finally {
+      likeSaves--;
+      writes++;
+    }
+  }
+  function like(id, quiet) {
+    if (!who || likes[who].includes(id)) return;
+    likes[who] = likes[who].concat(id);
+    sendLike(who, id, 'PUT');
+    if (!quiet && isMatch(id)) setTimeout(announceMatches, 500);
+  }
+  // A match stays until it is cooked or removed, unless this is undoing the swipe that made it.
+  function unlike(id, evenIfMatched) {
+    if (!who || !likes[who].includes(id) || (isMatch(id) && !evenIfMatched)) return;
+    likes[who] = likes[who].filter(x => x !== id);
+    sendLike(who, id, 'DELETE');
+  }
+  function endMatch(id) {
+    Object.keys(PEOPLE).forEach(person => {
+      if (!likes[person].includes(id)) return;
+      likes[person] = likes[person].filter(x => x !== id);
+      sendLike(person, id, 'DELETE');
+    });
+  }
+  function announceMatches() {
+    if (!who || !loaded || !$('tonight').hidden || !$('who').hidden || openId || shopOpen || !$('adder').hidden) return;
+    const now = matchIds(), fresh = now.filter(id => !seenMatches.includes(id));
+    seenMatches = now;
+    store(SEEN_KEY, seenMatches);
+    if (fresh.length) showMatch(fresh[0], fresh.length - 1);
+    renderBadge();
+  }
+  function showWho() {
+    $('who').hidden = false;
+    $('app').inert = true;
+    $('who').querySelector('button').focus({ preventScroll: true });
+  }
+
   function renderBadge() {
-    const badge = $('shortBadge'), n = shortlist.length;
+    const badge = $('shortBadge'), n = shortlist.length, matched = matchIds().length;
     badge.textContent = n;
     badge.hidden = !n;
-    $('shortTab').setAttribute('aria-label', n ? 'Shortlist, ' + n + (n === 1 ? ' dish' : ' dishes') : 'Shortlist');
+    $('matchBadge').textContent = '♥ ' + matched;
+    $('matchBadge').hidden = !matched;
+    $('shortTab').setAttribute('aria-label', (n ? 'Shortlist, ' + n + (n === 1 ? ' dish' : ' dishes') : 'Shortlist') + (matched ? ', ' + matched + (matched === 1 ? ' match' : ' matches') : ''));
     if (n > badgeCount && !flying) bumpBadge();
     badgeCount = n;
   }
@@ -347,7 +405,22 @@
 
   function renderShortlist() {
     renderBadge();
-    $('panelShort').innerHTML = '<h2 class="panel-title">Your shortlist</h2>' + (shortlist.length
+    const matched = matchIds();
+    const views = '<div class="seg"><button type="button" data-view="mine" aria-pressed="' + (shortView === 'mine') + '">Shortlist</button><button type="button" data-view="matches" aria-pressed="' + (shortView === 'matches') + '">Matches' + (matched.length ? ' (' + matched.length + ')' : '') + '</button></div>';
+    if (shortView === 'matches') {
+      $('panelShort').innerHTML = '<h2 class="panel-title">Your matches</h2>' + views + (matched.length
+        ? '<p class="panel-note">You and ' + esc(otherName()) + ' both swiped right on these. Add one to your shortlist to shop for it.</p>' +
+          '<div class="picks">' + matched.map(id => {
+            const r = recipes.get(id), on = shortlist.includes(id);
+            return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r) +
+              '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '" aria-label="' + esc(r.title) + ': on the shortlist">' + ic(on ? 'check' : 'plus') + '</button>' +
+              '<button type="button" class="pick-remove" data-unmatch="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from your matches">' + ic('x') + '</button></div>';
+          }).join('') + '</div>'
+        : '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">💞</span>No matches yet. When you and ' + esc(otherName()) + ' both swipe right on a dish, it lands here.</p>') +
+        '<button type="button" class="quiet" data-change-who>This phone is ' + esc(PEOPLE[who] || 'nobody yet') + '. Change</button>';
+      return;
+    }
+    $('panelShort').innerHTML = '<h2 class="panel-title">Your shortlist</h2>' + views + (shortlist.length
       ? '<p class="panel-note">Pick tonight\'s dinner, or plan a few nights and create one shopping list.</p>' +
         '<div class="picks">' + shortlist.map(id => {
           const r = recipes.get(id);
@@ -452,6 +525,8 @@
       buzz(10);
     }
     shortlist = on ? shortlist.filter(x => x !== id) : shortlist.concat(id);
+    if (on) unlike(id);
+    else like(id);
     passed = passed.filter(x => x !== id);
     saveShortlist();
     syncDeck();
@@ -527,16 +602,41 @@
     buzz([14, 60, 20]);
     box.querySelector('[data-act="done"]').focus({ preventScroll: true });
   }
+  function showMatch(id, more) {
+    const r = recipes.get(id), box = $('tonight');
+    box.className = 'tonight ' + colourOf(r) + ' ' + variant(id);
+    box.dataset.id = id;
+    box.innerHTML = art(r) + '<p class="tonight-brand" aria-hidden="true">Supper Swipe</p>' +
+      '<div class="tonight-text"><p class="kicker">It\'s a match</p><h2' + (String(r.title).length > 34 ? ' class="long"' : '') + '>' + esc(r.title) + '</h2>' +
+      '<p class="tonight-by">You and ' + esc(otherName()) + ' both want this' + (more ? ', plus ' + more + ' more' : '') + '</p></div>' +
+      '<div class="tonight-actions"><button type="button" class="soft" data-act="matches">See matches</button><button type="button" data-act="done">Keep swiping</button></div>';
+    box.hidden = false;
+    $('app').inert = true;
+    if (canAnimate) {
+      box.animate([{ opacity: 0, transform: 'scale(1.08)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2, .85, .25, 1)' });
+      setTimeout(() => { if (!box.hidden) burst(innerWidth / 2, innerHeight * .42, plate(r).concat('💞', '🎉'), 18); }, 380);
+    }
+    buzz([14, 60, 20, 60, 30]);
+    box.querySelector('[data-act="done"]').focus({ preventScroll: true });
+  }
   function hideTonight() {
     const box = $('tonight');
     if (box.hidden) return;
     box.hidden = true;
+    $('app').inert = !!(openId || shopOpen || !$('adder').hidden);
     $('recipe').inert = !$('adder').hidden;
     const back = $('recipe').querySelector('[data-act="close"]');
     if (back && openId) back.focus({ preventScroll: true });
   }
   $('tonight').addEventListener('click', async e => {
     const b = e.target.closest('button');
+    if (b && b.dataset.act === 'matches') {
+      hideTonight();
+      shortView = 'matches';
+      setTab('short');
+      renderShortlist();
+      return;
+    }
     if (!b || b.dataset.act !== 'tell') { hideTonight(); return; }
     const r = recipes.get($('tonight').dataset.id);
     if (!r) return;
@@ -680,6 +780,7 @@
     if (dir > 0 && !shortlist.includes(id)) {
       shortlist.push(id);
       saveShortlist();
+      like(id);
     }
     if (recipes.has(id)) say(recipes.get(id).title + (dir > 0 ? ' is on your shortlist' : ': not tonight'));
     render();
@@ -773,11 +874,13 @@
   async function load() {
     const seen = writes;
     try {
-      const { dishes } = await api('');
-      const fresh = JSON.stringify(dishes);
+      const answer = await api('');
+      const { dishes } = answer, fresh = JSON.stringify(answer);
       // An answer that set off before a save finished would put the old values back on screen.
-      if (saving || seen !== writes || fresh === lastLoaded) return;
+      if (saving || likeSaves || seen !== writes) return;
+      if (fresh === lastLoaded) { announceMatches(); return; }
       lastLoaded = fresh;
+      likes = answer.likes;
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
@@ -786,6 +889,7 @@
       if (first) rebuildDeck();
       syncDeck();
       render();
+      announceMatches();
     } catch (e) {
       if (!loaded) {
         failed = 'They could not be loaded. Check your connection and reopen the page.';
@@ -832,6 +936,7 @@
     if (dragging || !passed.length) return;
     const id = passed.pop();
     const side = shortlist.includes(id) ? 1 : -1;
+    if (side > 0) unlike(id, true);
     queue.unshift(id);
     shortlist = shortlist.filter(x => x !== id);
     saveShortlist();
@@ -856,6 +961,8 @@
     if (b.dataset.act === 'edit') { openEditor(openId); return; }
     if (b.dataset.act === 'cook') {
       const id = openId;
+      if (isMatch(id)) endMatch(id);
+      else unlike(id);
       shortlist = shortlist.filter(x => x !== id);
       saveShortlist();
       write(id, { lastHad: today(), tried: true });
@@ -896,6 +1003,20 @@
     if (!b) return;
     if (b.dataset.open) openRecipe(b.dataset.open, b.closest('.pick'));
     if (b.dataset.toggle) toggleShortlist(b.dataset.toggle);
+    if (b.dataset.view) {
+      shortView = b.dataset.view;
+      renderShortlist();
+    }
+    if (b.dataset.unmatch) {
+      const id = b.dataset.unmatch;
+      endMatch(id);
+      shortlist = shortlist.filter(x => x !== id);
+      saveShortlist();
+      syncDeck();
+      render();
+      toast(recipes.get(id).title + ' is off your matches');
+    }
+    if ('changeWho' in b.dataset) showWho();
     if (b.dataset.people) {
       const id = b.dataset.people;
       servings[id] = Math.min(30, Math.max(1, peopleFor(id) + Number(b.dataset.change)));
@@ -904,6 +1025,7 @@
     }
     if (b.dataset.act === 'shop') go({ tab, shop: true });
     if (b.dataset.act === 'clear') {
+      shortlist.forEach(id => unlike(id));
       shortlist = [];
       passed = [];
       saveShortlist();
@@ -1172,6 +1294,18 @@
   render();
 
   load();
+  $('who').addEventListener('click', e => {
+    const b = e.target.closest('[data-who]');
+    if (!b) return;
+    who = b.dataset.who;
+    store(WHO_KEY, who);
+    $('who').hidden = true;
+    $('app').inert = !!(openId || shopOpen || !$('adder').hidden);
+    shortlist.forEach(id => like(id, true));
+    render();
+    announceMatches();
+  });
+  if (!who) showWho();
   setInterval(() => { if (!document.hidden) load(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 })();

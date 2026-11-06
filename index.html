@@ -93,7 +93,7 @@
   <nav class="tabs" aria-label="Sections">
     <button type="button" data-tab="swipe"><span class="tab-ico"><svg class="ic" aria-hidden="true"><use href="#i-cards"/></svg></span>Swipe</button>
     <button type="button" data-tab="all"><span class="tab-ico"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span>All dishes</button>
-    <button type="button" data-tab="short" id="shortTab"><span class="tab-ico"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg><span class="tab-badge" id="shortBadge" hidden></span></span>Shortlist</button>
+    <button type="button" data-tab="short" id="shortTab"><span class="tab-ico"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg><span class="tab-match" id="matchBadge" hidden></span><span class="tab-badge" id="shortBadge" hidden></span></span>Shortlist</button>
   </nav>
 </div>
 
@@ -142,6 +142,15 @@
 </div>
 
 <div class="tonight" id="tonight" role="dialog" aria-modal="true" aria-label="Tonight's dinner" hidden></div>
+
+<div class="who" id="who" role="dialog" aria-modal="true" aria-labelledby="whoTitle" hidden>
+  <div class="who-in">
+    <h2 id="whoTitle">Who's on this phone?</h2>
+    <p>So Supper Swipe can spot when you both fancy the same dish.</p>
+    <button type="button" class="primary" data-who="adam">Adam</button>
+    <button type="button" class="primary" data-who="laura">Laura</button>
+  </div>
+</div>
 
 <div id="fx" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status"></div>
