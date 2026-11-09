@@ -229,7 +229,9 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .pick button { background: none; border: 0; }
 .pick-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 6px 10px 10px; text-align: left; }
 .tile { flex: none; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; font: 30px/1 var(--emoji); background: linear-gradient(160deg, var(--card), var(--card2)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
-.tile { overflow: hidden; }
+.tile { overflow: hidden; position: relative; }
+.tile-match { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--pop); color: var(--on-pop); font: 800 .72rem/1 var(--body); font-style: normal; box-shadow: 0 0 0 2px var(--surface); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .tile img { width: 100%; height: 100%; object-fit: cover; }
 .tile span { filter: drop-shadow(0 2px 2px rgba(40, 10, 10, .28)); }
 .pick-text { min-width: 0; display: grid; gap: 3px; }

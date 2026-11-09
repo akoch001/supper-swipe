@@ -58,6 +58,9 @@
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* kept until the page closes */ }
   };
   const servings = readStored(SERVINGS_KEY, {});
+  // The shopping list is made from the shortlist or from the matches. Each keeps its own ticks and basket marks.
+  let shopFrom = 'mine';
+  const ticksKey = () => (shopFrom === 'matches' ? TICKS_KEY + '-matches' : TICKS_KEY);
   let ticks = readStored(TICKS_KEY, { list: '', names: [] });
   const SHOP_KEY = 'supper-swipe-shop';
   let shop = readStored(SHOP_KEY, 'ah');
@@ -316,8 +319,9 @@
 
   const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
-  const rowOpen = (id, r) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true">' + (r.photo ? '<img src="' + esc(r.photo.replace('.jpg', '-thumb.jpg')) + '" alt="" loading="lazy">' : '<span>' + plate(r)[0] + '</span>') + '</span>' +
-    '<span class="pick-text"><strong>' + esc(r.title) + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
+  const rowOpen = (id, r, heart) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true">' + (r.photo ? '<img src="' + esc(r.photo.replace('.jpg', '-thumb.jpg')) + '" alt="" loading="lazy">' : '<span>' + plate(r)[0] + '</span>') + (heart ? '<i class="tile-match">♥</i>' : '') + '</span>' +
+    '<span class="pick-text"><strong>' + esc(r.title) + (heart ? '<span class="vh">, a match</span>' : '') + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
+  const peopleRow = id => '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">' + ic('minus') + '</button><b>' + peopleFor(id) + '</b><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">' + ic('plus') + '</button></span></div>';
 
   function renderAll() {
     const words = $('search').value.toLowerCase().split(/\s+/).filter(Boolean);
@@ -411,13 +415,14 @@
     const views = '<div class="seg"><button type="button" data-view="mine" aria-pressed="' + (shortView === 'mine') + '">Shortlist</button><button type="button" data-view="matches" aria-pressed="' + (shortView === 'matches') + '">Matches' + (matched.length ? ' (' + matched.length + ')' : '') + '</button></div>';
     if (shortView === 'matches') {
       $('panelShort').innerHTML = '<h2 class="panel-title">Your matches</h2>' + views + (matched.length
-        ? '<p class="panel-note">You and ' + esc(otherName()) + ' both swiped right on these. Add one to your shortlist to shop for it.</p>' +
+        ? '<p class="panel-note">You and ' + esc(otherName()) + ' both swiped right on these. Create a shopping list for all of them, or add one to your shortlist.</p>' +
           '<div class="picks">' + matched.map(id => {
             const r = recipes.get(id), on = shortlist.includes(id);
             return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r) +
               '<button type="button" class="pick-toggle" data-toggle="' + esc(id) + '" aria-pressed="' + on + '" aria-label="' + esc(r.title) + ': on the shortlist">' + ic(on ? 'check' : 'plus') + '</button>' +
-              '<button type="button" class="pick-remove" data-unmatch="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from your matches">' + ic('x') + '</button></div>';
-          }).join('') + '</div>'
+              '<button type="button" class="pick-remove" data-unmatch="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from your matches">' + ic('x') + '</button>' + peopleRow(id) + '</div>';
+          }).join('') + '</div>' +
+          '<div class="list-actions"><button type="button" class="primary" data-act="shop" data-from="matches">' + ic('bag') + 'Create shopping list</button></div>'
         : '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">💞</span>No matches yet. When you and ' + esc(otherName()) + ' both swipe right on a dish, it lands here.</p>') +
         '<button type="button" class="quiet" data-change-who>This phone is ' + esc(PEOPLE[who] || 'nobody yet') + '. Change</button>';
       return;
@@ -427,9 +432,8 @@
         '<div class="picks">' + shortlist.map(id => {
           const r = recipes.get(id);
           if (!r) return '';
-          return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r) +
-            '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">' + ic('x') + '</button>' +
-            '<div class="people"><span>Cooking for</span><span class="stepper"><button type="button" data-people="' + esc(id) + '" data-change="-1" aria-label="Fewer people">' + ic('minus') + '</button><b>' + peopleFor(id) + '</b><button type="button" data-people="' + esc(id) + '" data-change="1" aria-label="More people">' + ic('plus') + '</button></span></div></div>';
+          return '<div class="pick ' + colourOf(r) + '">' + rowOpen(id, r, matched.includes(id)) +
+            '<button type="button" class="pick-remove" data-toggle="' + esc(id) + '" aria-label="Remove ' + esc(r.title) + ' from the shortlist">' + ic('x') + '</button>' + peopleRow(id) + '</div>';
         }).join('') + '</div>' +
         '<button type="button" class="quiet" data-act="clear">Clear shortlist</button>' +
         '<div class="list-actions"><button type="button" class="primary" data-act="shop">' + ic('bag') + 'Create shopping list</button></div>'
@@ -437,9 +441,9 @@
   }
 
   function shoppingList() {
-    const dishes = shortlist.filter(id => recipes.has(id)).map(id => {
+    const dishes = (shopFrom === 'matches' ? matchIds() : shortlist).filter(id => recipes.has(id)).map(id => {
       const r = recipes.get(id);
-      return { title: r.title, shopping: list(r.shopping), factor: peopleFor(id) / Shopping.servesOf(r) };
+      return { id, title: r.title, shopping: list(r.shopping), factor: peopleFor(id) / Shopping.servesOf(r) };
     });
     return { dishes, aisles: Shopping.build(dishes) };
   }
@@ -449,16 +453,16 @@
     box.hidden = !shopOpen;
     if (!shopOpen) return;
     const { dishes, aisles } = shoppingList();
-    const listId = shortlist.map(id => id + ':' + peopleFor(id)).sort().join(',');
+    const listId = dishes.map(d => d.id + ':' + peopleFor(d.id)).sort().join(',');
     if (ticks.list !== listId) {
       const names = aisles.flatMap(a => a.items.map(i => i.name));
       ticks = { list: listId, names: [], basket: list(ticks.basket).filter(n => names.includes(n)) };
-      store(TICKS_KEY, ticks);
+      store(ticksKey(), ticks);
     }
     box.innerHTML = '<div class="sheet-in">' +
       '<div class="sheet-bar"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button><h2>Shopping list</h2></div>' +
       '<div class="sheet-body">' +
-      '<p class="sub">For ' + dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ') + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
+      '<p class="sub">For ' + (shopFrom === 'matches' ? 'your ' + dishes.length + (dishes.length === 1 ? ' match: ' : ' matches: ') : dishes.length + (dishes.length === 1 ? ' dish: ' : ' dishes: ')) + esc(dishes.map(d => d.title).join(', ')) + '</p>' +
       '<p class="note">Amounts are added up from the recipes, so round up to what the shop sells. Tick what you need, or select all and untick what you already have. Only ticked items are sent. If nothing is ticked, the whole list goes. Tap ' + (shop === 'crisp' ? 'Crisp on a line to find it at Crisp' : 'AH on a line to find it at Albert Heijn') + ', which also marks it as in your basket. Tap the basket to change that.</p>' +
       '<div class="rate-row"><span>Shop at</span><div class="seg"><button type="button" data-shop="ah" aria-pressed="' + (shop === 'ah') + '">Albert Heijn</button><button type="button" data-shop="crisp" aria-pressed="' + (shop === 'crisp') + '">Crisp</button></div></div>' +
       '<div class="progress"><div class="count-row"><p class="count" id="shopCount" aria-live="polite"></p><button type="button" class="chip" id="allBtn" data-act="all"></button></div>' +
@@ -483,7 +487,7 @@
   const inBasket = name => list(ticks.basket).includes(name);
   function setBasket(name, on) {
     ticks.basket = list(ticks.basket).filter(n => n !== name).concat(on ? [name] : []);
-    store(TICKS_KEY, ticks);
+    store(ticksKey(), ticks);
     const b = [...$('shop').querySelectorAll('[data-basket]')].find(x => x.dataset.basket === name);
     b.setAttribute('aria-pressed', on);
     b.closest('.buy').classList.toggle('in', on);
@@ -708,6 +712,11 @@
     $('getRecipe').hidden = !!editId;
     $('linkNote').hidden = $('getFile').hidden = !!editId;
     shopOpen = !!s.shop;
+    const from = s.shop === 'matches' ? 'matches' : 'mine';
+    if (shopOpen && from !== shopFrom) {
+      shopFrom = from;
+      ticks = readStored(ticksKey(), { list: '', names: [] });
+    }
     $('adder').hidden = !s.add;
     $('panelSwipe').hidden = tab !== 'swipe';
     $('panelAll').hidden = tab !== 'all';
@@ -1044,7 +1053,7 @@
       store(SERVINGS_KEY, servings);
       renderShortlist();
     }
-    if (b.dataset.act === 'shop') go({ tab, shop: true });
+    if (b.dataset.act === 'shop') go({ tab, shop: b.dataset.from === 'matches' ? 'matches' : true });
     if (b.dataset.act === 'clear') {
       shortlist.forEach(id => unlike(id));
       shortlist = [];
@@ -1072,14 +1081,14 @@
     if (b.dataset.basket) setBasket(b.dataset.basket, !inBasket(b.dataset.basket));
     if (b.dataset.act === 'basket-clear') {
       ticks.basket = [];
-      store(TICKS_KEY, ticks);
+      store(ticksKey(), ticks);
       renderShop();
     }
     if (b.dataset.act === 'close') closeSheet($('shop'));
     if (b.dataset.act === 'all') {
       const names = shopNames();
       ticks.names = names.every(n => ticks.names.includes(n)) ? [] : names;
-      store(TICKS_KEY, ticks);
+      store(ticksKey(), ticks);
       renderShop();
     }
     if (b.dataset.act === 'ah') {
@@ -1125,7 +1134,7 @@
     const name = e.target.dataset.tick;
     if (!name) return;
     ticks.names = e.target.checked ? ticks.names.concat(name) : ticks.names.filter(n => n !== name);
-    store(TICKS_KEY, ticks);
+    store(ticksKey(), ticks);
     renderShopCount();
   });
   addEventListener('popstate', e => {
