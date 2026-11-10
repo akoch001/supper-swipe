@@ -57,7 +57,7 @@
       <div class="chips" id="chips" hidden></div>
       <div class="count-row">
         <p class="count" id="count" aria-live="polite"></p>
-        <div class="count-chips"><button type="button" class="chip" data-lexi aria-pressed="false">Lexi proof</button><button type="button" class="chip" id="easyBtn" aria-pressed="false">Easy only</button></div>
+        <div class="count-chips"><button type="button" class="chip" data-lexi aria-pressed="false">Kid friendly</button><button type="button" class="chip" id="easyBtn" aria-pressed="false">Easy only</button></div>
       </div>
     </section>
 
@@ -83,7 +83,7 @@
     </div>
     <div class="count-row">
       <p class="count" id="allCount" aria-live="polite"></p>
-      <button type="button" class="chip" data-lexi aria-pressed="false">Lexi proof</button>
+      <button type="button" class="chip" data-lexi aria-pressed="false">Kid friendly</button>
     </div>
     <div class="picks" id="allList"></div>
   </div>
@@ -115,6 +115,7 @@
         <input type="file" id="f-file" accept="application/pdf,image/*" hidden>
         <div class="read-bar" id="readBar" role="progressbar" aria-label="Reading the recipe" hidden><i></i></div>
         <small id="linkNote" role="status">Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.</small>
+        <small id="readsLeft" class="reads-left" hidden></small>
       </div>
       <div class="field">
         <span class="field-name">Photo</span>
@@ -130,7 +131,7 @@
       <div class="field"><label for="f-steps">Method</label><textarea id="f-steps" rows="6"></textarea><small>One step per line. Saved here, so you keep it even if the original site disappears.</small></div>
       <div class="rate">
         <label class="check"><input type="checkbox" id="f-tried">We've made this, so it's tried and tested</label>
-        <label class="check"><input type="checkbox" id="f-lexi">Lexi proof</label>
+        <label class="check"><input type="checkbox" id="f-lexi">Kid friendly</label>
       </div>
       <section><h3>Rate it</h3><div class="rate" id="formRate"></div></section>
       <details id="moreDetails">
@@ -156,8 +157,7 @@
   <div class="who-in">
     <h2 id="whoTitle">Who's on this phone?</h2>
     <p>So Supper Swipe can spot when you both fancy the same dish.</p>
-    <button type="button" class="primary" data-who="adam">Adam</button>
-    <button type="button" class="primary" data-who="laura">Laura</button>
+    <div id="whoPick" class="who-pick"></div>
   </div>
 </div>
 

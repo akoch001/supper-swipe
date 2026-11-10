@@ -44,13 +44,27 @@
 
   const recipes = new Map();
   let saving = 0, lastLoaded = '';
-  const SHORTLIST_KEY = 'supper-swipe-shortlist';
+  // Which group this phone is in. The link says (/?g=ludo-eva) and the phone remembers it, for when it opens
+  // without one. Phones from before groups were all Adam's or Laura's. The cookie carries it to the server.
+  const GROUP_KEY = 'supper-swipe-group', FIRST_GROUP = 'adam-laura', GROUP_NAME = /^[a-z-]{1,40}$/;
+  const remembered = key => { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } };
+  const linked = new URLSearchParams(location.search).get('g');
+  let group = [linked, remembered(GROUP_KEY)].find(g => GROUP_NAME.test(g || '')) ||
+    (['adam', 'laura'].includes(remembered('supper-swipe-who')) ? FIRST_GROUP : null);
+  const joinGroup = g => {
+    try { localStorage.setItem(GROUP_KEY, JSON.stringify(g)); } catch (e) { /* the link still works each time it is opened */ }
+    document.cookie = 'supper-group=' + g + '; path=/; max-age=31536000; samesite=lax';
+  };
+  if (group) joinGroup(group);
+  // Each group keeps its own lists on the phone, so opening another group's link doesn't mix them. Adam and Laura's keep their old names.
+  const keyed = (key, g = group) => (g === FIRST_GROUP ? key : key + '@' + g);
+  const SHORTLIST_KEY = keyed('supper-swipe-shortlist');
   let shortlist = [];
   try { shortlist = JSON.parse(localStorage.getItem(SHORTLIST_KEY)) || []; } catch (e) { shortlist = []; }
   const saveShortlist = () => {
     try { localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist)); } catch (e) { /* the list still works until the page closes */ }
   };
-  const SERVINGS_KEY = 'supper-swipe-servings', TICKS_KEY = 'supper-swipe-to-buy';
+  const SERVINGS_KEY = keyed('supper-swipe-servings'), TICKS_KEY = keyed('supper-swipe-to-buy');
   const readStored = (key, fallback) => {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
   };
@@ -68,11 +82,14 @@
   let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
   let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false;
-  // Who this phone belongs to, and what each of you has swiped right on. A dish you both like is a match.
-  const WHO_KEY = 'supper-swipe-who', SEEN_KEY = 'supper-swipe-seen-matches', PEOPLE = { adam: 'Adam', laura: 'Laura' };
+  // Who this phone belongs to, and what each person in the group has swiped right on. A dish any two like is a match.
+  // The group's people come from the server with the dishes.
+  const WHO_KEY = keyed('supper-swipe-who'), SEEN_KEY = keyed('supper-swipe-seen-matches');
+  let PEOPLE = {};
+  // AI reads this month, as the server counts them: { limit: 5, used: { adam: 2, laura: 0 } }.
+  let reads = null;
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
-  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false;
-  if (!Object.hasOwn(PEOPLE, who || '')) who = null;
+  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = {}, likeSaves = 0, shortView = 'mine', ahConnected = false;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
 
@@ -207,7 +224,7 @@
   function cardHTML(id) {
     const r = recipes.get(id), title = String(r.title || '');
     const size = title.length > 50 ? ' class="xlong"' : title.length > 34 ? ' class="long"' : '';
-    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Lexi proof</span>' : '');
+    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Kid friendly</span>' : '');
     const kicker = headline(r).join(' · ');
     return '<article class="card ' + colourOf(r) + ' ' + variant(id) + '" data-id="' + esc(id) + '">' + art(r) +
       '<span class="stamp yes" aria-hidden="true">Shortlist</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
@@ -298,7 +315,7 @@
       '<div class="sheet-body">' +
       (r.blurb ? '<p class="lede">' + esc(r.blurb) + '</p>' : '') +
       '<div class="rate">' +
-        '<div class="rate-row"><span>Lexi proof?</span><div class="seg">' +
+        '<div class="rate-row"><span>Kid friendly?</span><div class="seg">' +
         '<button type="button" data-flag="lexi" data-val="1" aria-pressed="' + !!r.lexi + '">Yes</button>' +
         '<button type="button" data-flag="lexi" data-val="0" aria-pressed="' + !r.lexi + '">No</button></div></div>' +
         '<div class="rate-row"><span>Made it before?</span><div class="seg">' +
@@ -317,7 +334,7 @@
       '</div>';
   }
 
-  const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
+  const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Kid friendly' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
   const rowOpen = (id, r, heart) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true">' + (r.photo ? '<img src="' + esc(r.photo.replace('.jpg', '-thumb.jpg')) + '" alt="" loading="lazy">' : '<span>' + plate(r)[0] + '</span>') + (heart ? '<i class="tile-match">♥</i>' : '') + '</span>' +
     '<span class="pick-text"><strong>' + esc(r.title) + (heart ? '<span class="vh">, a match</span>' : '') + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
@@ -341,9 +358,10 @@
     }).join('') : (loaded ? '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">🔍</span>No dishes match that.</p>' : '');
   }
 
-  const otherName = () => PEOPLE[who === 'laura' ? 'adam' : 'laura'];
-  const isMatch = id => likes.adam.includes(id) && likes.laura.includes(id);
-  const matchIds = () => likes.adam.filter(id => likes.laura.includes(id) && recipes.has(id));
+  const otherName = () => Object.keys(PEOPLE).filter(p => p !== who).map(p => PEOPLE[p]).join(' and ');
+  const likedBy = person => likes[person] || [];
+  const isMatch = id => Object.keys(PEOPLE).filter(p => likedBy(p).includes(id)).length >= 2;
+  const matchIds = () => [...new Set(Object.keys(PEOPLE).flatMap(likedBy))].filter(id => isMatch(id) && recipes.has(id));
   async function sendLike(person, id, method) {
     const path = '/likes/' + person + '/' + encodeURIComponent(id);
     likeSaves++;
@@ -360,20 +378,20 @@
     }
   }
   function like(id, quiet) {
-    if (!who || likes[who].includes(id)) return;
-    likes[who] = likes[who].concat(id);
+    if (!who || likedBy(who).includes(id)) return;
+    likes[who] = likedBy(who).concat(id);
     sendLike(who, id, 'PUT');
     if (!quiet && isMatch(id)) setTimeout(announceMatches, 500);
   }
   // A match stays until it is cooked or removed, unless this is undoing the swipe that made it.
   function unlike(id, evenIfMatched) {
-    if (!who || !likes[who].includes(id) || (isMatch(id) && !evenIfMatched)) return;
+    if (!who || !likedBy(who).includes(id) || (isMatch(id) && !evenIfMatched)) return;
     likes[who] = likes[who].filter(x => x !== id);
     sendLike(who, id, 'DELETE');
   }
   function endMatch(id) {
     Object.keys(PEOPLE).forEach(person => {
-      if (!likes[person].includes(id)) return;
+      if (!likedBy(person).includes(id)) return;
       likes[person] = likes[person].filter(x => x !== id);
       sendLike(person, id, 'DELETE');
     });
@@ -386,7 +404,23 @@
     if (fresh.length) showMatch(fresh[0], fresh.length - 1);
     renderBadge();
   }
-  function showWho() {
+  // With its group known, the phone offers that group's people. Without one, it offers everyone, by group.
+  async function showWho() {
+    let groups = { [group]: PEOPLE };
+    if (!group) {
+      try {
+        const res = await fetch('/api/dishes/groups', { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) throw new Error('Request failed');
+        groups = await res.json();
+      } catch (e) {
+        failed = 'They could not be loaded. Check your connection and reopen the page.';
+        render();
+        return;
+      }
+    }
+    $('whoPick').innerHTML = Object.entries(groups).map(([g, people]) => '<div class="who-group">' +
+      Object.entries(people).map(([key, name]) => '<button type="button" class="primary" data-who="' + esc(key) + '" data-group="' + esc(g) + '">' + esc(name) + '</button>').join('') +
+      '</div>').join('');
     $('who').hidden = false;
     $('app').inert = true;
     $('who').querySelector('button').focus({ preventScroll: true });
@@ -711,6 +745,7 @@
     $('saveBtn').textContent = editId ? 'Save changes' : 'Save dish';
     $('getRecipe').hidden = !!editId;
     $('linkNote').hidden = $('getFile').hidden = !!editId;
+    if (editId) $('readsLeft').hidden = true;
     shopOpen = !!s.shop;
     const from = s.shop === 'matches' ? 'matches' : 'mine';
     if (shopOpen && from !== shopFrom) {
@@ -791,6 +826,30 @@
     card.querySelectorAll('.stamp').forEach(s => { s.style.opacity = 0; });
   }
 
+  // Swipes and cooking are counted here and sent every so often, so swiping never waits on the network.
+  // Likes, matches and AI reads are counted on the server.
+  const unsent = { swipes: 0, cooked: 0 };
+  let sendTimer = null;
+  function sendUsage(leaving) {
+    clearTimeout(sendTimer);
+    sendTimer = null;
+    if (!who || !(unsent.swipes || unsent.cooked)) return;
+    const counts = { ...unsent };
+    unsent.swipes = unsent.cooked = 0;
+    // keepalive lets it finish even as the phone puts the page away.
+    fetch('/api/dishes/usage', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ who, counts }) })
+      .then(res => { if (!res.ok) throw new Error(); })
+      .catch(() => {
+        unsent.swipes += counts.swipes;
+        unsent.cooked += counts.cooked;
+        if (!leaving && !sendTimer) sendTimer = setTimeout(sendUsage, 60000);
+      });
+  }
+  function count(kind) {
+    unsent[kind]++;
+    if (!sendTimer) sendTimer = setTimeout(sendUsage, kind === 'cooked' ? 2000 : 20000);
+  }
+
   function fling(dir) {
     if (dragging || !queue.length) return;
     const stack = $('stack'), card = stack.lastElementChild;
@@ -806,6 +865,7 @@
     dragY = 0;
     const id = queue.shift();
     passed.push(id);
+    count('swipes');
     if (dir > 0 && !shortlist.includes(id)) {
       shortlist.push(id);
       saveShortlist();
@@ -910,7 +970,12 @@
       if (fresh === lastLoaded) { announceMatches(); return; }
       lastLoaded = fresh;
       likes = answer.likes;
+      PEOPLE = answer.people;
+      if (who && !Object.hasOwn(PEOPLE, who)) who = null;
+      if (!who && $('who').hidden) showWho();
       ahConnected = answer.ah;
+      reads = answer.reads || null;
+      showReadsLeft();
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
@@ -921,6 +986,13 @@
       render();
       announceMatches();
     } catch (e) {
+      // A link to a group that isn't there: forget it and ask who this is instead.
+      if (e.message === 'No such group') {
+        try { localStorage.removeItem(GROUP_KEY); } catch (err) { /* nothing was kept */ }
+        document.cookie = 'supper-group=; path=/; max-age=0';
+        location.replace('/');
+        return;
+      }
       if (!loaded) {
         failed = 'They could not be loaded. Check your connection and reopen the page.';
         render();
@@ -996,12 +1068,13 @@
       shortlist = shortlist.filter(x => x !== id);
       saveShortlist();
       write(id, { lastHad: today(), tried: true });
+      count('cooked');
       showTonight(id);
       return;
     }
     if (b.dataset.flag) {
       const on = b.dataset.val === '1';
-      const said = b.dataset.flag === 'lexi' ? (on ? 'Marked Lexi proof' : 'No longer marked Lexi proof') : (on ? 'Marked tried and tested' : 'Marked to try');
+      const said = b.dataset.flag === 'lexi' ? (on ? 'Marked kid friendly' : 'No longer marked kid friendly') : (on ? 'Marked tried and tested' : 'Marked to try');
       write(openId, { [b.dataset.flag]: on }, said);
       return;
     }
@@ -1206,11 +1279,20 @@
     showFormPhoto(d.photo);
     formRun++;
   }
+  const readsLeft = () => (reads && who ? Math.max(0, reads.limit - (reads.used[who] || 0)) : null);
+  function showReadsLeft() {
+    const left = readsLeft();
+    $('readsLeft').hidden = left === null || !!editId;
+    if (left !== null) $('readsLeft').textContent = left ? left + ' of ' + reads.limit + ' AI reads left this month. Links with recipe data on the page are free.'
+      : "You've used your " + reads.limit + ' AI reads this month. Links with recipe data on the page still work.';
+  }
+  const usedUpNote = () => "You've used your " + (reads ? reads.limit : 5) + ' AI reads this month. Type the recipe in instead, or try again next month.';
   function openAdder() {
     fillForm({});
     $('moreDetails').open = false;
     $('linkNote').textContent = 'Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.';
     go({ tab, add: true });
+    showReadsLeft();
     $('f-link').focus({ preventScroll: true });
   }
   function openEditor(id) {
@@ -1323,9 +1405,19 @@
   };
   // Hands the work to the AI reader, then asks every two seconds how it went. Returns null if the form moved on.
   async function readWithAI(payload, run) {
-    const { id } = await api('/read', 'POST', payload, 90000);
+    if (readsLeft() === 0) throw new Error('used-up');
+    let id;
+    try {
+      ({ id } = await api('/read', 'POST', { ...payload, who }, 90000));
+    } catch (err) {
+      if (err.message.startsWith("You've used")) { if (reads && who) reads.used[who] = reads.limit; showReadsLeft(); throw new Error('used-up'); }
+      throw err;
+    }
     const started = await fetch('/api/read-recipe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
     if (!started.ok) throw new Error('Could not start reading');
+    // The server counts it now that it has started, so show one fewer without waiting for the next load.
+    if (reads && who) reads.used[who] = (reads.used[who] || 0) + 1;
+    showReadsLeft();
     for (let i = 0; i < 90; i++) {
       await new Promise(done => setTimeout(done, 2000));
       if (run !== formRun) return null;
@@ -1357,7 +1449,7 @@
         await photoFromLink(recipe, run);
       }
     } catch (err) {
-      if (run === formRun) $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
+      if (run === formRun) $('linkNote').textContent = err.message === 'used-up' ? usedUpNote() : 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
     } finally {
       busyReading(false);
     }
@@ -1397,7 +1489,7 @@
       }
     } catch (err) {
       if (run !== formRun) return;
-      $('linkNote').textContent = err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
+      $('linkNote').textContent = err.message === 'used-up' ? usedUpNote() : err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
         : err.message === 'AI reading is not switched on' ? 'AI reading is not switched on yet.' : 'That file could not be read. Try again, or type it in.';
     } finally {
       busyReading(false);
@@ -1494,10 +1586,17 @@
   applyNav(null);
   render();
 
-  load();
+  if (group) load();
   $('who').addEventListener('click', e => {
     const b = e.target.closest('[data-who]');
     if (!b) return;
+    // Picking someone in another group moves the phone to that group, which starts the page afresh.
+    if (b.dataset.group !== group) {
+      joinGroup(b.dataset.group);
+      store(keyed('supper-swipe-who', b.dataset.group), b.dataset.who);
+      location.replace('/?g=' + encodeURIComponent(b.dataset.group));
+      return;
+    }
     who = b.dataset.who;
     store(WHO_KEY, who);
     $('who').hidden = true;
@@ -1506,7 +1605,7 @@
     render();
     announceMatches();
   });
-  if (!who) showWho();
+  if (!group) showWho();
   // The AH login helper hands its code over here, in the browser that holds the site password.
   const ahCode = /^#ah-code=([^&]+)/.exec(location.hash);
   if (ahCode) {
@@ -1520,6 +1619,10 @@
       load();
     });
   }
-  setInterval(() => { if (!document.hidden) load(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+  setInterval(() => { if (group && !document.hidden) load(); }, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) sendUsage(true);
+    else if (group) load();
+  });
+  addEventListener('pagehide', () => sendUsage(true));
 })();

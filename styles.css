@@ -372,6 +372,8 @@ details summary { min-height: 44px; display: flex; align-items: center; font-wei
 .who-in { display: grid; gap: 12px; width: min(100%, 360px); text-align: center; }
 .who-in h2 { margin: 0; font: 800 2.3rem/1 var(--display); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -.025em; }
 .who-in p { margin: 0 0 10px; color: var(--muted); }
+.who-pick, .who-group { display: grid; gap: 12px; }
+.who-pick { gap: 24px; }
 .tonight .art { --u: min(1.24cqw, .64cqh); }
 .tonight .sticker { animation: land .7s var(--spring) backwards; }
 .tonight .s2 { animation-delay: .12s; }

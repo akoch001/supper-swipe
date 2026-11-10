@@ -40,8 +40,26 @@ When a link has no recipe data, or you pick a PDF or photo in the Add a dish for
 
 ## Matches
 
-Each phone says once whether it is Adam's or Laura's. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish you both like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.
+Each phone says once who it belongs to. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish any two people in the group like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.
+
+## Groups
+
+Each group has its own link (`/?g=ludo-eva`) and its own store in Netlify Blobs, so its likes, scores, added dishes and photos never reach another group. The groups and their people are listed in `lib/groups.mjs`; adding a group is a line there. Adam and Laura's group uses the store everything was in before groups, and a phone that sends no group is treated as theirs. A new group starts with the dishes in `data/recipes.json`, with their ease and speed but no liked ratings. A phone opened without its link, such as from the home screen, asks who it is from everyone in every group, and the name picked sets the group.
 
 ## Sending the list to AH
 
 The shopping list can put its items on an AH account's list, using the API AH's own app uses. There is no official one, so it may stop working. To connect, run `node scripts/ah-login.mjs` on a computer and log in to AH in the window it opens. The tokens stay in Netlify Blobs under `ah/tokens` and never reach the page. Disconnect AH on the shopping list removes them. Nothing here can touch the basket or place an order.
+
+## Stage two: sharing with family (in progress)
+
+Agreed with Adam, November 2026. Check off as each step is done.
+
+1. Done: groups. Each has its own link and store (see Groups above). Groups so far: Adam and Laura, Ludo and Eva, Marius and Marinke.
+2. Done: AI reading is capped at 5 reads per person per calendar month (Dutch time), in `lib/allowance.mjs`. The page sends who it is with each read, and the count sits in the group's own store under `usage/reads/<month>/<person>`. A read counts when the model is about to be asked, so one that never starts, or a page that can't be fetched, is free. The Add a dish form shows reads left and says when they are used up; recipe links with their own recipe data still import free. Also set a monthly spend limit in the Anthropic Console as the hard ceiling. A cheaper model in `lib/reader.mjs` could cut costs, but test it on a few PDFs and photos first.
+3. Done: "Lexi proof" is "Kid friendly" on screen. The saved field is still `lexi`, so existing marks stay.
+4. Done: usage is tracked per group, person and day in `lib/usage.mjs`: one blob per group per day (`usage/day/2026-11-10`) holding everyone's swipes, likes, matches, dishes cooked and AI reads. The server counts likes, matches and reads where they happen. The phone counts swipes and cooking and sends them to `/api/dishes/usage` in batches (20 seconds after a swipe, 2 after cooking, and when the page is put away), so swiping never waits on the network. A like sent twice counts once. Undoing a swipe doesn't take a count back.
+5. Done: `/stats` (also `/status`) shows that usage: per group, totals per person, when each person last used it, and a day-by-day table. Adam and Laura's group sees every group; any other group sees only its own. It goes by the group cookie the app sets, so a browser that has never opened the app sees nothing (`lib/stats.mjs`, `stats.html`, `stats.js`).
+
+Decided: the dishes Adam and Laura added in the app, with their edits and photos, are copied once into each new group on its first load, without their liked score or last-cooked date (`lib/copy.mjs`). A marker blob `copied/first-group` stops it running twice. After that each copy belongs to the group, and dishes Adam and Laura add later are not copied.
+
+The AH buttons only open a search in the AH app or site on whoever's phone it is. Sending to an AH list was never connected, so nothing reaches Adam's account.

@@ -1,7 +1,17 @@
 [build]
   # Publish only the files the page loads. Recipes reach the page through the function.
-  command = "npm test && rm -rf _site && mkdir -p _site/icons _site/photos && cp photos/*.jpg _site/photos/ && cp index.html app.js shopping.js styles.css manifest.webmanifest robots.txt _site/ && cp icons/*.png _site/icons/"
+  command = "npm test && rm -rf _site && mkdir -p _site/icons _site/photos && cp photos/*.jpg _site/photos/ && cp index.html stats.html stats.js app.js shopping.js styles.css manifest.webmanifest robots.txt _site/ && cp icons/*.png _site/icons/"
   publish = "_site"
+
+[[redirects]]
+  from = "/stats"
+  to = "/stats.html"
+  status = 200
+
+[[redirects]]
+  from = "/status"
+  to = "/stats.html"
+  status = 200
 
 [functions]
   node_bundler = "esbuild"
