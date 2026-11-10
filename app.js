@@ -224,7 +224,7 @@
   function cardHTML(id) {
     const r = recipes.get(id), title = String(r.title || '');
     const size = title.length > 50 ? ' class="xlong"' : title.length > 34 ? ' class="long"' : '';
-    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Lexi proof</span>' : '');
+    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Kid friendly</span>' : '');
     const kicker = headline(r).join(' · ');
     return '<article class="card ' + colourOf(r) + ' ' + variant(id) + '" data-id="' + esc(id) + '">' + art(r) +
       '<span class="stamp yes" aria-hidden="true">Shortlist</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
@@ -315,7 +315,7 @@
       '<div class="sheet-body">' +
       (r.blurb ? '<p class="lede">' + esc(r.blurb) + '</p>' : '') +
       '<div class="rate">' +
-        '<div class="rate-row"><span>Lexi proof?</span><div class="seg">' +
+        '<div class="rate-row"><span>Kid friendly?</span><div class="seg">' +
         '<button type="button" data-flag="lexi" data-val="1" aria-pressed="' + !!r.lexi + '">Yes</button>' +
         '<button type="button" data-flag="lexi" data-val="0" aria-pressed="' + !r.lexi + '">No</button></div></div>' +
         '<div class="rate-row"><span>Made it before?</span><div class="seg">' +
@@ -334,7 +334,7 @@
       '</div>';
   }
 
-  const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Lexi proof' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
+  const factsOf = r => [r.tried ? '' : 'To try', r.lexi ? 'Kid friendly' : '', r.minutes ? r.minutes + ' min' : '', r.ease ? 'Ease ' + r.ease : '', r.love ? 'Liked ' + r.love + '/5' : ''].filter(Boolean).join(' · ');
   const peopleFor = id => servings[id] || Shopping.servesOf(recipes.get(id));
   const rowOpen = (id, r, heart) => '<button type="button" class="pick-open" data-open="' + esc(id) + '"><span class="tile" aria-hidden="true">' + (r.photo ? '<img src="' + esc(r.photo.replace('.jpg', '-thumb.jpg')) + '" alt="" loading="lazy">' : '<span>' + plate(r)[0] + '</span>') + (heart ? '<i class="tile-match">♥</i>' : '') + '</span>' +
     '<span class="pick-text"><strong>' + esc(r.title) + (heart ? '<span class="vh">, a match</span>' : '') + '</strong><span>' + esc(factsOf(r)) + '</span></span></button>';
@@ -1048,7 +1048,7 @@
     }
     if (b.dataset.flag) {
       const on = b.dataset.val === '1';
-      const said = b.dataset.flag === 'lexi' ? (on ? 'Marked Lexi proof' : 'No longer marked Lexi proof') : (on ? 'Marked tried and tested' : 'Marked to try');
+      const said = b.dataset.flag === 'lexi' ? (on ? 'Marked kid friendly' : 'No longer marked kid friendly') : (on ? 'Marked tried and tested' : 'Marked to try');
       write(openId, { [b.dataset.flag]: on }, said);
       return;
     }
