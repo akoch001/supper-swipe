@@ -826,6 +826,30 @@
     card.querySelectorAll('.stamp').forEach(s => { s.style.opacity = 0; });
   }
 
+  // Swipes and cooking are counted here and sent every so often, so swiping never waits on the network.
+  // Likes, matches and AI reads are counted on the server.
+  const unsent = { swipes: 0, cooked: 0 };
+  let sendTimer = null;
+  function sendUsage(leaving) {
+    clearTimeout(sendTimer);
+    sendTimer = null;
+    if (!who || !(unsent.swipes || unsent.cooked)) return;
+    const counts = { ...unsent };
+    unsent.swipes = unsent.cooked = 0;
+    // keepalive lets it finish even as the phone puts the page away.
+    fetch('/api/dishes/usage', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ who, counts }) })
+      .then(res => { if (!res.ok) throw new Error(); })
+      .catch(() => {
+        unsent.swipes += counts.swipes;
+        unsent.cooked += counts.cooked;
+        if (!leaving && !sendTimer) sendTimer = setTimeout(sendUsage, 60000);
+      });
+  }
+  function count(kind) {
+    unsent[kind]++;
+    if (!sendTimer) sendTimer = setTimeout(sendUsage, kind === 'cooked' ? 2000 : 20000);
+  }
+
   function fling(dir) {
     if (dragging || !queue.length) return;
     const stack = $('stack'), card = stack.lastElementChild;
@@ -841,6 +865,7 @@
     dragY = 0;
     const id = queue.shift();
     passed.push(id);
+    count('swipes');
     if (dir > 0 && !shortlist.includes(id)) {
       shortlist.push(id);
       saveShortlist();
@@ -1043,6 +1068,7 @@
       shortlist = shortlist.filter(x => x !== id);
       saveShortlist();
       write(id, { lastHad: today(), tried: true });
+      count('cooked');
       showTonight(id);
       return;
     }
@@ -1594,5 +1620,9 @@
     });
   }
   setInterval(() => { if (group && !document.hidden) load(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (group && !document.hidden) load(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) sendUsage(true);
+    else if (group) load();
+  });
+  addEventListener('pagehide', () => sendUsage(true));
 })();

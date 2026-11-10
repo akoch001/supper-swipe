@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/dishes.test.mjs tests/shopping.test.mjs tests/reader.test.mjs tests/ah.test.mjs tests/photos.test.mjs tests/groups.test.mjs tests/allowance.test.mjs tests/copy.test.mjs"
+    "test": "node --test tests/dishes.test.mjs tests/shopping.test.mjs tests/reader.test.mjs tests/ah.test.mjs tests/photos.test.mjs tests/groups.test.mjs tests/allowance.test.mjs tests/copy.test.mjs tests/usage.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.6.0",
