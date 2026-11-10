@@ -109,7 +109,7 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .stack { position: relative; flex: 1; min-height: 290px; --p: 0; }
 .card {
   position: absolute; inset: 0 0 18px; border-radius: 30px; overflow: hidden; container-type: size; display: flex; flex-direction: column;
-  touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab;
+  touch-action: pan-y; -webkit-touch-callout: none; cursor: grab;
   color: var(--ink); background: linear-gradient(160deg, var(--card) 0%, var(--card2) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 18px 36px -14px rgba(var(--shadow), .5), 0 3px 8px rgba(var(--shadow), .16);
   transform-origin: 50% 90%; will-change: transform;
@@ -303,6 +303,11 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .steps { gap: 14px; counter-reset: step; }
 .steps li { counter-increment: step; display: grid; grid-template-columns: 34px 1fr; gap: 12px; }
 .steps li::before { content: counter(step); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--fg); color: var(--bg); font: 800 1rem/1 var(--display); font-variation-settings: "SOFT" 100; }
+/* Ticked off while cooking: greyed and struck through, and a step's number becomes a tick. */
+[data-tick] { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: opacity .2s; }
+[data-tick].done { opacity: .4; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.steps li.done::before { content: "✓"; background: var(--muted); }
+.tick-hint { margin: 0; color: var(--muted); font-size: .9rem; }
 .cta-bar, .send-bar {
   position: sticky; bottom: 0; z-index: 3; display: grid; gap: 8px;
   padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line);

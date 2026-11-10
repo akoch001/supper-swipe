@@ -288,6 +288,25 @@
     [1, 2, 3, 4, 5].map(i => '<button type="button" ' + attr + '="' + s[0] + '" data-val="' + i + '" class="' + (i <= valueOf(s[0]) ? 'on' : '') + '" aria-label="' + s[1] + ' ' + i + ' out of 5">' + i + '</button>').join('') +
     '</div></div>').join('');
 
+  // While cooking, a tap on an ingredient or step greys it out, and another tap brings it back. Kept per
+  // phone and per dish, so a locked phone or a reload doesn't lose your place, and forgotten after a day.
+  const TICKS_COOKING_KEY = keyed('supper-swipe-cooking'), TICKS_LAST = 18 * 3600000;
+  let cooking = {};
+  try { cooking = JSON.parse(localStorage.getItem(TICKS_COOKING_KEY)) || {}; } catch (e) { cooking = {}; }
+  Object.keys(cooking).forEach(id => { if (!(Date.now() - cooking[id].at < TICKS_LAST)) delete cooking[id]; });
+  const ticked = id => (cooking[id] ? cooking[id].done : []);
+  function toggleTick(id, line) {
+    const done = ticked(id).includes(line) ? ticked(id).filter(x => x !== line) : ticked(id).concat(line);
+    if (done.length) cooking[id] = { at: Date.now(), done };
+    else delete cooking[id];
+    try { localStorage.setItem(TICKS_COOKING_KEY, JSON.stringify(cooking)); } catch (e) { /* still ticked until the page closes */ }
+    return done.includes(line);
+  }
+  const tickLine = (id, line, inner) => {
+    const on = ticked(id).includes(line);
+    return '<li role="checkbox" tabindex="0" aria-checked="' + on + '" data-tick="' + line + '"' + (on ? ' class="done"' : '') + '>' + inner + '</li>';
+  };
+
   function renderRecipe() {
     const box = $('recipe');
     const r = openId && recipes.get(openId);
@@ -325,8 +344,9 @@
       (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '') +
       (needsRecipe(r) ? '<p class="note">This recipe has not been copied in yet. Use the link below to see it, or tap Edit to add it.</p>' : '') +
       (takes.length ? '<section><h3>What it takes</h3><ul class="takes">' + takes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
-      (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul class="ingredients">' + list(r.shopping).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></section>' : '') +
-      (list(r.steps).length ? '<section><h3>Method</h3><ol class="steps">' + list(r.steps).map(x => '<li><span>' + esc(x) + '</span></li>').join('') + '</ol></section>' : '') +
+      (list(r.shopping).length || list(r.steps).length ? '<p class="tick-hint">Cooking? Tap an ingredient or step to tick it off, and tap again to bring it back.</p>' : '') +
+      (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul class="ingredients">' + list(r.shopping).map((x, i) => tickLine(openId, 'i' + i, esc(x))).join('') + '</ul></section>' : '') +
+      (list(r.steps).length ? '<section><h3>Method</h3><ol class="steps">' + list(r.steps).map((x, i) => tickLine(openId, 's' + i, '<span>' + esc(x) + '</span>')).join('') + '</ol></section>' : '') +
       (src ? '<p class="source">' + src + '</p>' : '') +
       '</div>' +
       '<div class="cta-bar"><button type="button" class="ghost" data-toggle="' + esc(openId) + '" aria-pressed="' + on + '">' + ic('heart') + (on ? 'On shortlist' : 'Shortlist') + '</button>' +
@@ -1056,7 +1076,19 @@
     if (b.dataset.act === 'add') openAdder();
     if (b.dataset.act === 'retry') { failed = ''; render(); load(); }
   });
+  // Ticks change only the line tapped, so the page doesn't redraw or jump while you cook.
+  const tick = li => {
+    const on = toggleTick(openId, li.dataset.tick);
+    li.classList.toggle('done', on);
+    li.setAttribute('aria-checked', String(on));
+  };
+  $('recipe').addEventListener('keydown', e => {
+    const li = e.target.closest && e.target.closest('[data-tick]');
+    if (li && openId && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tick(li); }
+  });
   $('recipe').addEventListener('click', e => {
+    const li = e.target.closest('[data-tick]');
+    if (li && openId && !e.target.closest('a') && !String(getSelection()).trim()) { tick(li); return; }
     const b = e.target.closest('button');
     if (!b || !openId) return;
     if (b.dataset.act === 'close') { closeSheet($('recipe')); return; }
