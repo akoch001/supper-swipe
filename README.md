@@ -49,3 +49,17 @@ Each group has its own link (`/?g=ludo-eva`) and its own store in Netlify Blobs,
 ## Sending the list to AH
 
 The shopping list can put its items on an AH account's list, using the API AH's own app uses. There is no official one, so it may stop working. To connect, run `node scripts/ah-login.mjs` on a computer and log in to AH in the window it opens. The tokens stay in Netlify Blobs under `ah/tokens` and never reach the page. Disconnect AH on the shopping list removes them. Nothing here can touch the basket or place an order.
+
+## Stage two: sharing with family (in progress)
+
+Agreed with Adam, November 2026. Check off as each step is done.
+
+1. Done: groups. Each has its own link and store (see Groups above). Groups so far: Adam and Laura, Ludo and Eva, Marius and Marinke.
+2. To do: cap AI reading at 5 reads per person per month, counted on the server per group and person. When someone runs out, the form says so; recipe links with their own recipe data still import free. Also set a monthly spend limit in the Anthropic Console as the hard ceiling. A cheaper model in `lib/reader.mjs` could cut costs, but test it on a few PDFs and photos first.
+3. To do: rename "Lexi proof" to "Kid friendly" on screen only, keeping the saved field `lexi` so existing marks stay.
+4. To do: track usage per group and per day: swipes, likes, matches, dishes cooked, AI reads.
+5. To do: a stats page showing that usage per group.
+
+Open question: dishes Adam and Laura added in the app, and their photos, live in their group's store, so new groups don't get them. Adam to decide whether to copy them, without ratings, into each new group.
+
+The AH buttons only open a search in the AH app or site on whoever's phone it is. Sending to an AH list was never connected, so nothing reaches Adam's account.
