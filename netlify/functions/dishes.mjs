@@ -15,7 +15,7 @@ export default async req => {
   if (path === '/groups' && req.method === 'GET') return json(200, Object.fromEntries(Object.entries(GROUPS).map(([name, g]) => [name, g.people])));
   if (path === '/stats' && req.method === 'GET') {
     const viewer = explicitGroup(req);
-    if (!viewer) return json(403, { error: 'Open the app once on this phone first, from your group's link' });
+    if (!viewer) return json(403, { error: "Open the app once on this phone first, from your group's link" });
     return json(200, await statsFor(viewer, g => getStore({ name: GROUPS[g].store, consistency: 'strong' })));
   }
   const name = groupFrom(req);
