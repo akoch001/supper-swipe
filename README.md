@@ -60,6 +60,6 @@ Agreed with Adam, November 2026. Check off as each step is done.
 4. To do: track usage per group and per day: swipes, likes, matches, dishes cooked, AI reads.
 5. To do: a stats page showing that usage per group.
 
-Open question: dishes Adam and Laura added in the app, and their photos, live in their group's store, so new groups don't get them. Adam to decide whether to copy them, without ratings, into each new group.
+Decided: the dishes Adam and Laura added in the app, with their edits and photos, are copied once into each new group on its first load, without their liked score or last-cooked date (`lib/copy.mjs`). A marker blob `copied/first-group` stops it running twice. After that each copy belongs to the group, and dishes Adam and Laura add later are not copied.
 
 The AH buttons only open a search in the AH app or site on whoever's phone it is. Sending to an AH list was never connected, so nothing reaches Adam's account.

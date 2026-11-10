@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
+import { copyFirstGroupDishes } from '../../lib/copy.mjs';
 import { handle } from '../../lib/dishes.mjs';
-import { freshDeck, groupFrom, GROUPS } from '../../lib/groups.mjs';
+import { FIRST_GROUP, freshDeck, groupFrom, GROUPS } from '../../lib/groups.mjs';
 import base from '../../data/recipes.json';
 
 const fresh = freshDeck(base);
@@ -15,6 +16,14 @@ export default async req => {
   if (!name) return json(404, { error: 'No such group' });
   const group = GROUPS[name];
   const store = getStore({ name: group.store, consistency: 'strong' });
+  // A new group's first load copies in the dishes Adam and Laura added (see lib/copy.mjs).
+  if (group.fresh && path === '' && req.method === 'GET') {
+    try {
+      await copyFirstGroupDishes(getStore({ name: GROUPS[FIRST_GROUP].store, consistency: 'strong' }), store, name);
+    } catch (err) {
+      console.error('Copying dishes failed, will try again on the next load:', err.message);
+    }
+  }
   return handle(req, path, group.fresh ? fresh : base, store, randomUUID, group.people);
 };
 
