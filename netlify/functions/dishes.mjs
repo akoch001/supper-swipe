@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { copyFirstGroupDishes } from '../../lib/copy.mjs';
 import { handle } from '../../lib/dishes.mjs';
 import { FIRST_GROUP, freshDeck, groupFrom, GROUPS } from '../../lib/groups.mjs';
+import { explicitGroup, statsFor } from '../../lib/stats.mjs';
 import base from '../../data/recipes.json';
 
 const fresh = freshDeck(base);
@@ -12,6 +13,11 @@ export default async req => {
   const path = new URL(req.url).pathname.replace(/^\/api\/dishes/, '').replace(/\/$/, '');
   // Who is in each group, for a phone that opened the app without its link.
   if (path === '/groups' && req.method === 'GET') return json(200, Object.fromEntries(Object.entries(GROUPS).map(([name, g]) => [name, g.people])));
+  if (path === '/stats' && req.method === 'GET') {
+    const viewer = explicitGroup(req);
+    if (!viewer) return json(403, { error: 'Open the app once on this phone first, from your group's link' });
+    return json(200, await statsFor(viewer, g => getStore({ name: GROUPS[g].store, consistency: 'strong' })));
+  }
   const name = groupFrom(req);
   if (!name) return json(404, { error: 'No such group' });
   const group = GROUPS[name];
