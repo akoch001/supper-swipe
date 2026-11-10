@@ -308,6 +308,26 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 [data-tick].done { opacity: .4; text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .steps li.done::before { content: "✓"; background: var(--muted); }
 .tick-hint { margin: 0; color: var(--muted); font-size: .9rem; }
+
+/* Cooking mode: a kitchen view of the dish, with big steps and the running timers kept in view at the top. */
+.cooking .cook-bar { position: sticky; top: 0; z-index: 3; display: grid; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); background: var(--bg); background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.cook-top { display: flex; align-items: center; gap: 12px; }
+.cook-title { min-width: 0; }
+.cook-title .kicker { margin: 0; color: var(--muted); font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.cook-title h2 { margin: 2px 0 0; font: 800 1.35rem/1.05 var(--display); font-variation-settings: "SOFT" 100, "WONK" 1; overflow-wrap: anywhere; }
+.timers { display: flex; flex-wrap: wrap; gap: 6px; }
+.timer { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--surface-2); font-size: .9rem; font-weight: 700; }
+.timer b { font: 800 1.05rem/1 var(--body); font-variant-numeric: tabular-nums; }
+.timer button { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; }
+.timer button svg.ic { width: 18px; height: 18px; }
+.timer.rang { background: var(--pop); color: var(--on-pop); animation: bump .6s var(--spring) 3; }
+.cooking .steps li, .cooking .ingredients li { font-size: 1.15rem; line-height: 1.5; }
+.cooking .steps { gap: 20px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.timer-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); font-size: .95rem; font-weight: 800; }
+.timer-chip svg.ic { width: 18px; height: 18px; }
+.timer-chip:disabled { opacity: .6; }
+[data-tick].done .timer-chip { text-decoration: none; }
 .cta-bar, .send-bar {
   position: sticky; bottom: 0; z-index: 3; display: grid; gap: 8px;
   padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line);

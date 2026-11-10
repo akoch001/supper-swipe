@@ -307,11 +307,123 @@
     return '<li role="checkbox" tabindex="0" aria-checked="' + on + '" data-tick="' + line + '"' + (on ? ' class="done"' : '') + '>' + inner + '</li>';
   };
 
+  // Cooking mode: after "We're cooking this tonight" the dish's page turns into a kitchen view. The screen
+  // stays on, the steps are big and tick off, and every time in the method ("roast for 30 to 40 minutes")
+  // becomes a timer you can start. Kept on the phone, so a reload or a locked phone keeps it all.
+  const COOK_KEY = keyed('supper-swipe-cook-session'), COOK_LASTS = 8 * 3600000;
+  let cook = readStored(COOK_KEY, null);
+  if (!cook || !(Date.now() - cook.at < COOK_LASTS)) cook = null;
+  const saveCook = () => { try { localStorage.setItem(COOK_KEY, JSON.stringify(cook)); } catch (e) { /* works until the page closes */ } };
+  const cookingNow = id => !!cook && cook.id === id;
+  // "30 to 40 minutes", "1 hour", "1½ hours", "5-10 mins". The timer is set to the shorter time, so you check early.
+  const TIME = /(\d+(?:[.,]\d+)?|½)(\s*½)?(?:\s*(?:to|-|–|or)\s*\d+(?:[.,]\d+)?)?\s*(hours?|hrs?|minutes?|mins?)\b/gi;
+  // A timer is named after the cooking word nearest before its time in that sentence, so "Pierce the
+  // aubergines and steam them for about 30 minutes" gives "Steam", and the step number tells two apart.
+  const VERBS = /\b(fry|cook|simmer|bake|roast|boil|steam|grill|griddle|chill|leave|rest|marinate|soak|soften|sweat|brown|toast|poach|braise|stew|drain|cool|rise|prove|blanch|microwave|sear|saut[eé]|reduce|cover|heat|warm|melt|whisk|stir|mix|blend|knead|char|caramelise|caramelize|infuse|steep|freeze|set|bubble|crisp|wilt|thicken)(?:s|es|ed|d|ing)?\b/gi;
+  function nameBefore(text) {
+    const sentence = text.split(/[.;!?]\s/).pop(), verbs = [...sentence.matchAll(VERBS)];
+    const verb = verbs.length ? verbs[verbs.length - 1][1].toLowerCase() : '';
+    return verb ? verb[0].toUpperCase() + verb.slice(1) : 'Timer';
+  }
+  function timesIn(step) {
+    const found = [];
+    for (const m of String(step).matchAll(TIME)) {
+      const n = m[1] === '½' ? .5 : parseFloat(m[1].replace(',', '.')) + (m[2] ? .5 : 0);
+      const minutes = Math.round(/^h/i.test(m[3]) ? n * 60 : n);
+      if (minutes >= 1 && minutes <= 720) found.push({ minutes, name: nameBefore(String(step).slice(0, m.index)) });
+    }
+    return found;
+  }
+  const clock = ms => {
+    const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+  };
+  const minutesText = n => (n % 60 === 0 && n >= 60 ? n / 60 + (n === 60 ? ' hour' : ' hours') : n + ' min');
+
+  let audio = null, ticker = null, wakeLock = null;
+  function ring(name) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      [0, .45, .9, 1.8, 2.25, 2.7].forEach(at => {
+        const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + at;
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(.0001, t);
+        g.gain.exponentialRampToValueAtTime(.4, t + .02);
+        g.gain.exponentialRampToValueAtTime(.0001, t + .35);
+        o.connect(g).connect(audio.destination);
+        o.start(t);
+        o.stop(t + .4);
+      });
+    } catch (e) { /* no sound on this phone, the buzz and the message still come */ }
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]);
+    toast('⏰ ' + name + ': time is up');
+  }
+  function tickTimers() {
+    if (!cook) return;
+    const now = Date.now();
+    cook.timers.forEach(t => {
+      if (!t.rang && t.ends <= now) {
+        t.rang = true;
+        saveCook();
+        ring(t.name);
+      }
+    });
+    document.querySelectorAll('[data-left]').forEach(el => {
+      const t = cook.timers.find(x => x.key === el.dataset.left);
+      if (!t) return;
+      el.textContent = t.rang ? 'Done' : clock(t.ends - now);
+      el.closest('.timer').classList.toggle('rang', !!t.rang);
+    });
+    if (!cook.timers.some(t => !t.rang)) { clearInterval(ticker); ticker = null; }
+  }
+  const runTicker = () => { if (!ticker && cook && cook.timers.some(t => !t.rang)) ticker = setInterval(tickTimers, 1000); };
+  async function keepScreenOn() {
+    const want = !!cook && openId === cook.id && document.visibilityState === 'visible';
+    try {
+      if (want && !wakeLock && navigator.wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!want && wakeLock) {
+        const lock = wakeLock;
+        wakeLock = null;
+        await lock.release();
+      }
+    } catch (e) { /* the phone said no, for example in battery saver */ }
+  }
+  document.addEventListener('visibilitychange', () => { keepScreenOn(); tickTimers(); });
+  runTicker();
+
+  function cookingHtml(r, id) {
+    const now = Date.now();
+    const bar = '<div class="cook-bar"><div class="cook-top"><button type="button" class="round" data-act="close" aria-label="Back">' + ic('back') + '</button>' +
+      '<div class="cook-title"><p class="kicker">Cooking' + (cook.by ? ' · ' + esc(cook.by) : '') + '</p><h2>' + esc(r.title) + '</h2></div></div>' +
+      (cook.timers.length ? '<div class="timers" role="status">' + cook.timers.map(t => '<div class="timer' + (t.rang ? ' rang' : '') + '"><span>' + esc(t.name) + '</span><b data-left="' + esc(t.key) + '">' + (t.rang ? 'Done' : clock(t.ends - now)) + '</b>' +
+        '<button type="button" data-stop="' + esc(t.key) + '" aria-label="Stop the ' + esc(t.name) + ' timer">' + ic('x') + '</button></div>').join('') + '</div>' : '') +
+      '</div>';
+    const steps = list(r.steps).map((x, i) => {
+      const chips = timesIn(x).map((t, j) => {
+        const key = 's' + i + 't' + j, on = cook.timers.some(k => k.key === key);
+        return '<button type="button" class="timer-chip" data-timer="' + key + '" data-minutes="' + t.minutes + '"' + (on ? ' disabled' : '') + '>' + ic('clock') + (on ? 'Timer on' : minutesText(t.minutes)) + '</button>';
+      }).join('');
+      return tickLine(id, 's' + i, '<span>' + esc(x) + (chips ? '<span class="chips">' + chips + '</span>' : '') + '</span>');
+    }).join('');
+    return '<div class="sheet-in cooking">' + bar + '<div class="sheet-body">' +
+      '<p class="tick-hint">' + (navigator.wakeLock ? 'The screen stays on while this is open. ' : '') + 'Tap a line to tick it off, and a time to start a timer.</p>' +
+      (list(r.shopping).length ? '<section><h3>Ingredients</h3><ul class="ingredients">' + list(r.shopping).map((x, i) => tickLine(id, 'i' + i, esc(x))).join('') + '</ul></section>' : '') +
+      (steps ? '<section><h3>Method</h3><ol class="steps">' + steps + '</ol></section>' : '<p class="note">This dish has no method saved. Tap Back, then Edit to add one.</p>') +
+      (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '') +
+      '</div>' +
+      '<div class="cta-bar"><button type="button" class="ghost" data-act="poster">' + ic('share') + 'Tell someone</button>' +
+      '<button type="button" class="primary" data-act="finish">Done cooking</button></div></div>';
+  }
+
   function renderRecipe() {
     const box = $('recipe');
     const r = openId && recipes.get(openId);
     box.hidden = !r;
     if (!r) return;
+    keepScreenOn();
+    if (cookingNow(openId)) { box.innerHTML = cookingHtml(r, openId); return; }
     const on = shortlist.includes(openId), kicker = headline(r).join(' · ');
     const src = /^https?:\/\//.test(r.sourceUrl || '') ? '<a href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">Original recipe' + (r.source ? ' from ' + esc(r.source) : '') + '</a>' : esc(r.source ? 'From: ' + r.source : '');
     const facts = [r.minutes ? ic('clock') + esc(r.minutes) + ' min' : '', r.serves ? 'Serves ' + esc(r.serves) : '', esc(lastHad(r))].filter(Boolean);
@@ -1084,11 +1196,11 @@
   };
   $('recipe').addEventListener('keydown', e => {
     const li = e.target.closest && e.target.closest('[data-tick]');
-    if (li && openId && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tick(li); }
+    if (li && openId && !e.target.closest('a, button') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tick(li); }
   });
   $('recipe').addEventListener('click', e => {
     const li = e.target.closest('[data-tick]');
-    if (li && openId && !e.target.closest('a') && !String(getSelection()).trim()) { tick(li); return; }
+    if (li && openId && !e.target.closest('a, button') && !String(getSelection()).trim()) { tick(li); return; }
     const b = e.target.closest('button');
     if (!b || !openId) return;
     if (b.dataset.act === 'close') { closeSheet($('recipe')); return; }
@@ -1101,6 +1213,39 @@
       saveShortlist();
       write(id, { lastHad: today(), tried: true });
       count('cooked');
+      cook = { id, at: Date.now(), by: tonightText(recipes.get(id)).by, timers: [] };
+      saveCook();
+      renderRecipe();
+      $('recipe').scrollTop = 0;
+      buzz([14, 60, 20]);
+      return;
+    }
+    // A tick on a timer's line shouldn't also tick the line, so timers are handled before ticks (see below).
+    if (b.dataset.timer && cookingNow(openId)) {
+      const [stepAt, timeAt] = b.dataset.timer.slice(1).split('t').map(Number);
+      const found = timesIn(list(recipes.get(openId).steps)[stepAt])[timeAt];
+      cook.timers = cook.timers.filter(t => t.key !== b.dataset.timer).concat({ key: b.dataset.timer, name: (found ? found.name : 'Timer') + ' · step ' + (stepAt + 1), ends: Date.now() + Number(b.dataset.minutes) * 60000 });
+      saveCook();
+      try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (err) { /* sound is a bonus */ }
+      renderRecipe();
+      runTicker();
+      toast(minutesText(Number(b.dataset.minutes)) + ' timer started');
+      return;
+    }
+    if (b.dataset.stop && cook) {
+      cook.timers = cook.timers.filter(t => t.key !== b.dataset.stop);
+      saveCook();
+      renderRecipe();
+      return;
+    }
+    if (b.dataset.act === 'poster') { showTonight(openId); return; }
+    if (b.dataset.act === 'finish') {
+      const id = openId;
+      cook = null;
+      saveCook();
+      delete cooking[id];
+      try { localStorage.setItem(TICKS_COOKING_KEY, JSON.stringify(cooking)); } catch (err) { /* nothing to forget */ }
+      renderRecipe();
       showTonight(id);
       return;
     }

@@ -30,6 +30,10 @@ The shortlist and the number of people per dish are kept per phone in the browse
 
 On a dish's page, tapping an ingredient or a method step greys it out and strikes it through (a step's number becomes a tick); tapping again brings it back. The ticks are kept on the phone per dish (`supper-swipe-cooking` in localStorage), so locking the phone or reloading keeps your place, and they are forgotten after 18 hours.
 
+## Cooking mode
+
+"We're cooking this tonight" still does the bookkeeping (last cooked date, tried and tested, off the shortlist and Matches, a "cooked" count for the stats), then turns the dish's page into a kitchen view instead of going straight to the poster. The screen stays on while it is open (the Screen Wake Lock API, where the phone supports it), the ingredients and steps are bigger and tick off, and every time in the method ("roast for 30 to 40 minutes") becomes a button that starts a timer at the shorter time. Running timers stay in view at the top, named after the cooking word before the time and the step ("Roast · step 4"), and ring, buzz and show a message when they finish. A phone that locks may hold the ring until it is unlocked. Everything is kept on the phone (`supper-swipe-cook-session`, for 8 hours), so a reload keeps the timers. "Done cooking" ends it and shows the poster; "Tell someone" shows the poster at any time.
+
 ## How it looks
 
 Each dish is a poster in the colour of its main ingredient (pink for dishes still to try), with a plate of up to three emoji. `plate()` in `app.js` picks them: first the foods the dish's name mentions, then its main ingredients. The colours, fonts and motion are all in `styles.css`; `prefers-reduced-motion` turns the motion off. Choosing "We're cooking this tonight" shows the dish as a full-screen poster that can be shared.
