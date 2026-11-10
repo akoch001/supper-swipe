@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join } from 'node:path';
 import { handle } from '../lib/dishes.mjs';
+import { runRead } from '../lib/reader.mjs';
 
 const root = join(import.meta.dirname, '..');
 const base = JSON.parse(await readFile(join(root, 'data/recipes.json'), 'utf8'));
@@ -13,6 +14,11 @@ const store = {
   get: async key => (memory.has(key) ? JSON.parse(memory.get(key)) : null),
   setJSON: async (key, value) => { memory.set(key, JSON.stringify(value)); }
 };
+// A stand-in for the AI reader, so the whole read flow, and the monthly cap, can be tried for free.
+process.env.ANTHROPIC_API_KEY ||= 'dev';
+const fakeModel = { beta: { messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({
+  found: true, title: 'Stand-in soup', blurb: 'Read by the pretend AI reader', minutes: 30, handsOn: 10, serves: '4', kit: '1 pot',
+  shopping: ['1 onion', '1 litre stock'], steps: ['Chop the onion.', 'Simmer in the stock.'], tags: ['soup'], source: 'Dev', photoPage: null, photoBox: [] }) }] }) } } };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PUBLIC = new Set(['/index.html', '/app.js', '/shopping.js', '/styles.css', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']);
 
@@ -26,6 +32,14 @@ createServer(async (req, res) => {
     const out = await handle(new Request(url, { method: req.method, body }), path, base, store, randomUUID);
     res.writeHead(out.status, Object.fromEntries(out.headers));
     res.end(await out.text());
+    return;
+  }
+  if (url.pathname === '/api/read-recipe') {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const { id } = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+    res.writeHead(202); res.end();
+    setTimeout(() => runRead(id, store, fakeModel), 1500);
     return;
   }
   const file = url.pathname === '/' ? '/index.html' : url.pathname;

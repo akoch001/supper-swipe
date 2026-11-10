@@ -34,7 +34,7 @@ function modelSaying(answer, stopReason = 'end_turn') {
   return { client, sent };
 }
 const recipe = { title: 'Soup', blurb: '', minutes: 30, handsOn: 10, serves: '4', kit: '1 pot', shopping: ['1 onion'], steps: ['Cook.'], tags: ['soup'], source: 'NYT Cooking' };
-const PDF = { type: 'application/pdf', data: 'JVBERi0xLjQ=' };
+const PDF = { type: 'application/pdf', data: 'JVBERi0xLjQ=', who: 'adam' };
 
 async function started(store) {
   process.env.ANTHROPIC_API_KEY = 'test';
@@ -80,10 +80,10 @@ test('says so when there is no recipe, or the model stops short', async () => {
 test('refuses what it should not read, and says when AI reading is off', async () => {
   const store = memoryStore();
   process.env.ANTHROPIC_API_KEY = 'test';
-  assert.equal((await call('POST', '/read', store, { type: 'text/html', data: 'AAAA' })).status, 400);
-  assert.equal((await call('POST', '/read', store, { type: PDF.type, data: 'not base64!' })).status, 400);
-  assert.equal((await call('POST', '/read', store, { url: 'file:///etc/passwd' })).status, 400);
-  assert.equal((await call('POST', '/read', store, { type: PDF.type, data: 'A'.repeat(5400004) })).status, 413);
+  assert.equal((await call('POST', '/read', store, { type: 'text/html', data: 'AAAA', who: 'adam' })).status, 400);
+  assert.equal((await call('POST', '/read', store, { type: PDF.type, data: 'not base64!', who: 'adam' })).status, 400);
+  assert.equal((await call('POST', '/read', store, { url: 'file:///etc/passwd', who: 'adam' })).status, 400);
+  assert.equal((await call('POST', '/read', store, { type: PDF.type, data: 'A'.repeat(5400004), who: 'adam' })).status, 413);
   assert.equal((await call('GET', '/read/nope', store)).status, 404);
   delete process.env.ANTHROPIC_API_KEY;
   assert.equal((await call('POST', '/read', store, PDF)).status, 503);

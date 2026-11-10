@@ -86,6 +86,8 @@
   // The group's people come from the server with the dishes.
   const WHO_KEY = keyed('supper-swipe-who'), SEEN_KEY = keyed('supper-swipe-seen-matches');
   let PEOPLE = {};
+  // AI reads this month, as the server counts them: { limit: 5, used: { adam: 2, laura: 0 } }.
+  let reads = null;
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
   let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = {}, likeSaves = 0, shortView = 'mine', ahConnected = false;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
@@ -743,6 +745,7 @@
     $('saveBtn').textContent = editId ? 'Save changes' : 'Save dish';
     $('getRecipe').hidden = !!editId;
     $('linkNote').hidden = $('getFile').hidden = !!editId;
+    if (editId) $('readsLeft').hidden = true;
     shopOpen = !!s.shop;
     const from = s.shop === 'matches' ? 'matches' : 'mine';
     if (shopOpen && from !== shopFrom) {
@@ -946,6 +949,8 @@
       if (who && !Object.hasOwn(PEOPLE, who)) who = null;
       if (!who && $('who').hidden) showWho();
       ahConnected = answer.ah;
+      reads = answer.reads || null;
+      showReadsLeft();
       const first = !loaded;
       recipes.clear();
       Object.entries(dishes).forEach(([id, d]) => recipes.set(id, d));
@@ -1248,11 +1253,20 @@
     showFormPhoto(d.photo);
     formRun++;
   }
+  const readsLeft = () => (reads && who ? Math.max(0, reads.limit - (reads.used[who] || 0)) : null);
+  function showReadsLeft() {
+    const left = readsLeft();
+    $('readsLeft').hidden = left === null || !!editId;
+    if (left !== null) $('readsLeft').textContent = left ? left + ' of ' + reads.limit + ' AI reads left this month. Links with recipe data on the page are free.'
+      : "You've used your " + reads.limit + ' AI reads this month. Links with recipe data on the page still work.';
+  }
+  const usedUpNote = () => "You've used your " + (reads ? reads.limit : 5) + ' AI reads this month. Type the recipe in instead, or try again next month.';
   function openAdder() {
     fillForm({});
     $('moreDetails').open = false;
     $('linkNote').textContent = 'Paste a link or pick a PDF or photo, and the recipe fills in below for you to check. Or just type it in.';
     go({ tab, add: true });
+    showReadsLeft();
     $('f-link').focus({ preventScroll: true });
   }
   function openEditor(id) {
@@ -1365,9 +1379,19 @@
   };
   // Hands the work to the AI reader, then asks every two seconds how it went. Returns null if the form moved on.
   async function readWithAI(payload, run) {
-    const { id } = await api('/read', 'POST', payload, 90000);
+    if (readsLeft() === 0) throw new Error('used-up');
+    let id;
+    try {
+      ({ id } = await api('/read', 'POST', { ...payload, who }, 90000));
+    } catch (err) {
+      if (err.message.startsWith("You've used")) { if (reads && who) reads.used[who] = reads.limit; showReadsLeft(); throw new Error('used-up'); }
+      throw err;
+    }
     const started = await fetch('/api/read-recipe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
     if (!started.ok) throw new Error('Could not start reading');
+    // The server counts it now that it has started, so show one fewer without waiting for the next load.
+    if (reads && who) reads.used[who] = (reads.used[who] || 0) + 1;
+    showReadsLeft();
     for (let i = 0; i < 90; i++) {
       await new Promise(done => setTimeout(done, 2000));
       if (run !== formRun) return null;
@@ -1399,7 +1423,7 @@
         await photoFromLink(recipe, run);
       }
     } catch (err) {
-      if (run === formRun) $('linkNote').textContent = 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
+      if (run === formRun) $('linkNote').textContent = err.message === 'used-up' ? usedUpNote() : 'That site would not share its recipe. Type in the name and whatever you want to keep. The link is saved with it.';
     } finally {
       busyReading(false);
     }
@@ -1439,7 +1463,7 @@
       }
     } catch (err) {
       if (run !== formRun) return;
-      $('linkNote').textContent = err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
+      $('linkNote').textContent = err.message === 'used-up' ? usedUpNote() : err.message === 'none' ? 'No recipe found in that file. Type in whatever you want to keep.'
         : err.message === 'AI reading is not switched on' ? 'AI reading is not switched on yet.' : 'That file could not be read. Try again, or type it in.';
     } finally {
       busyReading(false);

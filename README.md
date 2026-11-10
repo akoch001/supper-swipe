@@ -55,7 +55,7 @@ The shopping list can put its items on an AH account's list, using the API AH's 
 Agreed with Adam, November 2026. Check off as each step is done.
 
 1. Done: groups. Each has its own link and store (see Groups above). Groups so far: Adam and Laura, Ludo and Eva, Marius and Marinke.
-2. To do: cap AI reading at 5 reads per person per month, counted on the server per group and person. When someone runs out, the form says so; recipe links with their own recipe data still import free. Also set a monthly spend limit in the Anthropic Console as the hard ceiling. A cheaper model in `lib/reader.mjs` could cut costs, but test it on a few PDFs and photos first.
+2. Done: AI reading is capped at 5 reads per person per calendar month (Dutch time), in `lib/allowance.mjs`. The page sends who it is with each read, and the count sits in the group's own store under `usage/reads/<month>/<person>`. A read counts when the model is about to be asked, so one that never starts, or a page that can't be fetched, is free. The Add a dish form shows reads left and says when they are used up; recipe links with their own recipe data still import free. Also set a monthly spend limit in the Anthropic Console as the hard ceiling. A cheaper model in `lib/reader.mjs` could cut costs, but test it on a few PDFs and photos first.
 3. To do: rename "Lexi proof" to "Kid friendly" on screen only, keeping the saved field `lexi` so existing marks stay.
 4. To do: track usage per group and per day: swipes, likes, matches, dishes cooked, AI reads.
 5. To do: a stats page showing that usage per group.
