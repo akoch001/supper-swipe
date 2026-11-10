@@ -81,7 +81,7 @@ test('likes are kept per person and can be taken back', async () => {
   assert.deepEqual(await likes(), { adam: [], laura: ['orzo'] });
   assert.equal((await call('PUT', '/likes/adam/nope', store)).status, 404);
   assert.equal((await call('PUT', '/likes/adam/__proto__', store)).status, 404);
-  assert.equal((await call('PUT', '/likes/someone/orzo', store)).status, 400);
+  assert.equal((await call('PUT', '/likes/someone/orzo', store)).status, 404);
   assert.deepEqual(Object.keys(await dishes(store)), ['orzo']);
 });
 

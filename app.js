@@ -44,13 +44,27 @@
 
   const recipes = new Map();
   let saving = 0, lastLoaded = '';
-  const SHORTLIST_KEY = 'supper-swipe-shortlist';
+  // Which group this phone is in. The link says (/?g=ludo-eva) and the phone remembers it, for when it opens
+  // without one. Phones from before groups were all Adam's or Laura's. The cookie carries it to the server.
+  const GROUP_KEY = 'supper-swipe-group', FIRST_GROUP = 'adam-laura', GROUP_NAME = /^[a-z-]{1,40}$/;
+  const remembered = key => { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } };
+  const linked = new URLSearchParams(location.search).get('g');
+  let group = [linked, remembered(GROUP_KEY)].find(g => GROUP_NAME.test(g || '')) ||
+    (['adam', 'laura'].includes(remembered('supper-swipe-who')) ? FIRST_GROUP : null);
+  const joinGroup = g => {
+    try { localStorage.setItem(GROUP_KEY, JSON.stringify(g)); } catch (e) { /* the link still works each time it is opened */ }
+    document.cookie = 'supper-group=' + g + '; path=/; max-age=31536000; samesite=lax';
+  };
+  if (group) joinGroup(group);
+  // Each group keeps its own lists on the phone, so opening another group's link doesn't mix them. Adam and Laura's keep their old names.
+  const keyed = (key, g = group) => (g === FIRST_GROUP ? key : key + '@' + g);
+  const SHORTLIST_KEY = keyed('supper-swipe-shortlist');
   let shortlist = [];
   try { shortlist = JSON.parse(localStorage.getItem(SHORTLIST_KEY)) || []; } catch (e) { shortlist = []; }
   const saveShortlist = () => {
     try { localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist)); } catch (e) { /* the list still works until the page closes */ }
   };
-  const SERVINGS_KEY = 'supper-swipe-servings', TICKS_KEY = 'supper-swipe-to-buy';
+  const SERVINGS_KEY = keyed('supper-swipe-servings'), TICKS_KEY = keyed('supper-swipe-to-buy');
   const readStored = (key, fallback) => {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
   };
@@ -68,11 +82,12 @@
   let mode = 'all', easyOnly = false, lexiOnly = false, allShow = 'all';
   const have = new Set();
   let openId = null, editId = null, tab = 'swipe', shopOpen = false, loaded = false, failed = '', dragging = false;
-  // Who this phone belongs to, and what each of you has swiped right on. A dish you both like is a match.
-  const WHO_KEY = 'supper-swipe-who', SEEN_KEY = 'supper-swipe-seen-matches', PEOPLE = { adam: 'Adam', laura: 'Laura' };
+  // Who this phone belongs to, and what each person in the group has swiped right on. A dish any two like is a match.
+  // The group's people come from the server with the dishes.
+  const WHO_KEY = keyed('supper-swipe-who'), SEEN_KEY = keyed('supper-swipe-seen-matches');
+  let PEOPLE = {};
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
-  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = { adam: [], laura: [] }, likeSaves = 0, shortView = 'mine', ahConnected = false;
-  if (!Object.hasOwn(PEOPLE, who || '')) who = null;
+  let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = {}, likeSaves = 0, shortView = 'mine', ahConnected = false;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
 
@@ -341,9 +356,10 @@
     }).join('') : (loaded ? '<p class="empty-note"><span class="empty-emoji" aria-hidden="true">🔍</span>No dishes match that.</p>' : '');
   }
 
-  const otherName = () => PEOPLE[who === 'laura' ? 'adam' : 'laura'];
-  const isMatch = id => likes.adam.includes(id) && likes.laura.includes(id);
-  const matchIds = () => likes.adam.filter(id => likes.laura.includes(id) && recipes.has(id));
+  const otherName = () => Object.keys(PEOPLE).filter(p => p !== who).map(p => PEOPLE[p]).join(' and ');
+  const likedBy = person => likes[person] || [];
+  const isMatch = id => Object.keys(PEOPLE).filter(p => likedBy(p).includes(id)).length >= 2;
+  const matchIds = () => [...new Set(Object.keys(PEOPLE).flatMap(likedBy))].filter(id => isMatch(id) && recipes.has(id));
   async function sendLike(person, id, method) {
     const path = '/likes/' + person + '/' + encodeURIComponent(id);
     likeSaves++;
@@ -360,20 +376,20 @@
     }
   }
   function like(id, quiet) {
-    if (!who || likes[who].includes(id)) return;
-    likes[who] = likes[who].concat(id);
+    if (!who || likedBy(who).includes(id)) return;
+    likes[who] = likedBy(who).concat(id);
     sendLike(who, id, 'PUT');
     if (!quiet && isMatch(id)) setTimeout(announceMatches, 500);
   }
   // A match stays until it is cooked or removed, unless this is undoing the swipe that made it.
   function unlike(id, evenIfMatched) {
-    if (!who || !likes[who].includes(id) || (isMatch(id) && !evenIfMatched)) return;
+    if (!who || !likedBy(who).includes(id) || (isMatch(id) && !evenIfMatched)) return;
     likes[who] = likes[who].filter(x => x !== id);
     sendLike(who, id, 'DELETE');
   }
   function endMatch(id) {
     Object.keys(PEOPLE).forEach(person => {
-      if (!likes[person].includes(id)) return;
+      if (!likedBy(person).includes(id)) return;
       likes[person] = likes[person].filter(x => x !== id);
       sendLike(person, id, 'DELETE');
     });
@@ -386,7 +402,23 @@
     if (fresh.length) showMatch(fresh[0], fresh.length - 1);
     renderBadge();
   }
-  function showWho() {
+  // With its group known, the phone offers that group's people. Without one, it offers everyone, by group.
+  async function showWho() {
+    let groups = { [group]: PEOPLE };
+    if (!group) {
+      try {
+        const res = await fetch('/api/dishes/groups', { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) throw new Error('Request failed');
+        groups = await res.json();
+      } catch (e) {
+        failed = 'They could not be loaded. Check your connection and reopen the page.';
+        render();
+        return;
+      }
+    }
+    $('whoPick').innerHTML = Object.entries(groups).map(([g, people]) => '<div class="who-group">' +
+      Object.entries(people).map(([key, name]) => '<button type="button" class="primary" data-who="' + esc(key) + '" data-group="' + esc(g) + '">' + esc(name) + '</button>').join('') +
+      '</div>').join('');
     $('who').hidden = false;
     $('app').inert = true;
     $('who').querySelector('button').focus({ preventScroll: true });
@@ -910,6 +942,9 @@
       if (fresh === lastLoaded) { announceMatches(); return; }
       lastLoaded = fresh;
       likes = answer.likes;
+      PEOPLE = answer.people;
+      if (who && !Object.hasOwn(PEOPLE, who)) who = null;
+      if (!who && $('who').hidden) showWho();
       ahConnected = answer.ah;
       const first = !loaded;
       recipes.clear();
@@ -921,6 +956,13 @@
       render();
       announceMatches();
     } catch (e) {
+      // A link to a group that isn't there: forget it and ask who this is instead.
+      if (e.message === 'No such group') {
+        try { localStorage.removeItem(GROUP_KEY); } catch (err) { /* nothing was kept */ }
+        document.cookie = 'supper-group=; path=/; max-age=0';
+        location.replace('/');
+        return;
+      }
       if (!loaded) {
         failed = 'They could not be loaded. Check your connection and reopen the page.';
         render();
@@ -1494,10 +1536,17 @@
   applyNav(null);
   render();
 
-  load();
+  if (group) load();
   $('who').addEventListener('click', e => {
     const b = e.target.closest('[data-who]');
     if (!b) return;
+    // Picking someone in another group moves the phone to that group, which starts the page afresh.
+    if (b.dataset.group !== group) {
+      joinGroup(b.dataset.group);
+      store(keyed('supper-swipe-who', b.dataset.group), b.dataset.who);
+      location.replace('/?g=' + encodeURIComponent(b.dataset.group));
+      return;
+    }
     who = b.dataset.who;
     store(WHO_KEY, who);
     $('who').hidden = true;
@@ -1506,7 +1555,7 @@
     render();
     announceMatches();
   });
-  if (!who) showWho();
+  if (!group) showWho();
   // The AH login helper hands its code over here, in the browser that holds the site password.
   const ahCode = /^#ah-code=([^&]+)/.exec(location.hash);
   if (ahCode) {
@@ -1520,6 +1569,6 @@
       load();
     });
   }
-  setInterval(() => { if (!document.hidden) load(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+  setInterval(() => { if (group && !document.hidden) load(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (group && !document.hidden) load(); });
 })();

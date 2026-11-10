@@ -40,7 +40,11 @@ When a link has no recipe data, or you pick a PDF or photo in the Add a dish for
 
 ## Matches
 
-Each phone says once whether it is Adam's or Laura's. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish you both like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.
+Each phone says once who it belongs to. A right swipe, or adding a dish to the shortlist, also saves a like on the server (`likes/<person>/<dish>`). A dish any two people in the group like is a match, and it stays in the Matches list until it is cooked or removed. The shortlist itself stays per phone.
+
+## Groups
+
+Each group has its own link (`/?g=ludo-eva`) and its own store in Netlify Blobs, so its likes, scores, added dishes and photos never reach another group. The groups and their people are listed in `lib/groups.mjs`; adding a group is a line there. Adam and Laura's group uses the store everything was in before groups, and a phone that sends no group is treated as theirs. A new group starts with the dishes in `data/recipes.json`, with their ease and speed but no liked ratings. A phone opened without its link, such as from the home screen, asks who it is from everyone in every group, and the name picked sets the group.
 
 ## Sending the list to AH
 
