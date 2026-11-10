@@ -960,20 +960,26 @@
 
   // Swipes and cooking are counted here and sent every so often, so swiping never waits on the network.
   // Likes, matches and AI reads are counted on the server.
-  const unsent = { swipes: 0, cooked: 0 };
+  const unsent = { swipes: 0, cooked: 0, dishes: {} };
   let sendTimer = null;
   function sendUsage(leaving) {
     clearTimeout(sendTimer);
     sendTimer = null;
     if (!who || !(unsent.swipes || unsent.cooked)) return;
-    const counts = { ...unsent };
+    const counts = { swipes: unsent.swipes, cooked: unsent.cooked }, dishes = unsent.dishes;
     unsent.swipes = unsent.cooked = 0;
+    unsent.dishes = {};
     // keepalive lets it finish even as the phone puts the page away.
-    fetch('/api/dishes/usage', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ who, counts }) })
+    fetch('/api/dishes/usage', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ who, counts, dishes }) })
       .then(res => { if (!res.ok) throw new Error(); })
       .catch(() => {
         unsent.swipes += counts.swipes;
         unsent.cooked += counts.cooked;
+        Object.entries(dishes).forEach(([id, c]) => {
+          const now = unsent.dishes[id] || (unsent.dishes[id] = { right: 0, left: 0 });
+          now.right += c.right;
+          now.left += c.left;
+        });
         if (!leaving && !sendTimer) sendTimer = setTimeout(sendUsage, 60000);
       });
   }
@@ -998,6 +1004,8 @@
     const id = queue.shift();
     passed.push(id);
     count('swipes');
+    const seen = unsent.dishes[id] || (unsent.dishes[id] = { right: 0, left: 0 });
+    seen[dir > 0 ? 'right' : 'left']++;
     if (dir > 0 && !shortlist.includes(id)) {
       shortlist.push(id);
       saveShortlist();
@@ -1092,6 +1100,62 @@
     }
   }
 
+  // "How was it?": the next time a phone opens the app after a dish was chosen (at least three hours
+  // later), it asks for a rating, which also marks it cooked. Whoever answers first answers for both.
+  const ASKED_KEY = keyed('supper-swipe-asked');
+  let historyAt = 0, asking = null;
+  const asked = readStored(ASKED_KEY, []), notNow = new Set();
+  async function askHowItWas() {
+    if (!who || !loaded || asking || !$('tonight').hidden || !$('who').hidden || openId || shopOpen || !$('adder').hidden) return;
+    if (Date.now() - historyAt < 20 * 60000) return;
+    historyAt = Date.now();
+    let events;
+    try { ({ events } = await api('/history')); } catch (e) { return; }
+    const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+    const open = events.find(e => e.kind === 'chosen' && e.day >= weekAgo && recipes.has(e.dish) &&
+      Date.now() - new Date(e.at).getTime() > 3 * 3600000 && !asked.includes(e.key) && !notNow.has(e.key) &&
+      !events.some(c => c.kind === 'cooked' && c.dish === e.dish && c.day >= e.day));
+    if (!open || openId || !$('tonight').hidden) return;
+    asking = open;
+    const r = recipes.get(open.dish);
+    $('howTitle').textContent = 'How was the ' + r.title + '?';
+    $('howWhen').textContent = (open.who && PEOPLE[open.who] ? (open.who === who ? 'You' : PEOPLE[open.who]) + ' chose it ' : 'Chosen ') + (open.day === today() ? 'today' : 'on ' + new Date(open.day + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' })) + '.';
+    $('how').hidden = false;
+    $('app').inert = true;
+    $('how').querySelector('[data-stars="5"]').focus({ preventScroll: true });
+  }
+  function doneAsking() {
+    $('how').hidden = true;
+    $('app').inert = !!(openId || shopOpen || !$('adder').hidden);
+    asking = null;
+  }
+  $('how').addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b || !asking) return;
+    const ev = asking;
+    if (b.dataset.stars) {
+      const n = Number(b.dataset.stars);
+      asked.push(ev.key);
+      store(ASKED_KEY, asked.slice(-50));
+      doneAsking();
+      write(ev.dish, { love: n }, 'Saved: ' + n + ' out of 5');
+      api('/history', 'POST', { kind: 'cooked', id: ev.dish, who, rating: n }).catch(() => toast('That did not save. Check your connection.'));
+    } else if (b.dataset.act === 'didnt') {
+      asked.push(ev.key);
+      store(ASKED_KEY, asked.slice(-50));
+      doneAsking();
+      try {
+        const { lastHad } = await api('/history/' + ev.key.slice('history/'.length), 'DELETE');
+        const d = recipes.get(ev.dish);
+        if (d) { d.lastHad = lastHad; render(); }
+        toast('Taken off your history');
+      } catch (err) { toast('That did not save. Check your connection.'); }
+    } else {
+      notNow.add(ev.key);
+      doneAsking();
+    }
+  });
+
   async function load() {
     const seen = writes;
     try {
@@ -1099,7 +1163,7 @@
       const { dishes } = answer, fresh = JSON.stringify(answer);
       // An answer that set off before a save finished would put the old values back on screen.
       if (saving || likeSaves || seen !== writes) return;
-      if (fresh === lastLoaded) { announceMatches(); return; }
+      if (fresh === lastLoaded) { announceMatches(); askHowItWas(); return; }
       lastLoaded = fresh;
       likes = answer.likes;
       PEOPLE = answer.people;
@@ -1117,6 +1181,7 @@
       syncDeck();
       render();
       announceMatches();
+      setTimeout(askHowItWas, 1200);
     } catch (e) {
       // A link to a group that isn't there: forget it and ask who this is instead.
       if (e.message === 'No such group') {
@@ -1214,6 +1279,7 @@
       write(id, { lastHad: today(), tried: true });
       count('cooked');
       cook = { id, at: Date.now(), by: tonightText(recipes.get(id)).by, timers: [] };
+      if (who) api('/history', 'POST', { kind: 'chosen', id, who }).then(() => { historyAt = 0; }).catch(() => { /* the cooking still works */ });
       saveCook();
       renderRecipe();
       $('recipe').scrollTop = 0;

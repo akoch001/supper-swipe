@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --check netlify/functions/dishes.mjs && node --check netlify/functions/read-recipe.mjs && node --check app.js && node --check stats.js && node --test tests/dishes.test.mjs tests/shopping.test.mjs tests/reader.test.mjs tests/ah.test.mjs tests/photos.test.mjs tests/groups.test.mjs tests/allowance.test.mjs tests/copy.test.mjs tests/usage.test.mjs tests/stats.test.mjs"
+    "test": "node --check netlify/functions/dishes.mjs && node --check netlify/functions/read-recipe.mjs && node --check app.js && node --check stats.js && node --check history.js && node --test tests/dishes.test.mjs tests/shopping.test.mjs tests/reader.test.mjs tests/ah.test.mjs tests/photos.test.mjs tests/groups.test.mjs tests/allowance.test.mjs tests/copy.test.mjs tests/usage.test.mjs tests/stats.test.mjs tests/history.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.6.0",

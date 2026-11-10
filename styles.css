@@ -399,6 +399,15 @@ details summary { min-height: 44px; display: flex; align-items: center; font-wei
 .who-in p { margin: 0 0 10px; color: var(--muted); }
 .who-pick, .who-group { display: grid; gap: 12px; }
 .who-pick { gap: 24px; }
+.how h2 { font-size: 2rem; text-wrap: balance; }
+.stars { display: flex; justify-content: center; gap: 4px; margin-bottom: 8px; }
+.stars button { width: 56px; height: 56px; border: 0; border-radius: 16px; background: var(--surface-2); color: var(--muted); font-size: 1.9rem; line-height: 1; transition: transform .14s var(--spring), background .15s, color .15s; }
+.stars button:active { transform: scale(.9); }
+.stars:has(button:nth-child(1):hover) button:nth-child(-n+1), .stars:has(button:nth-child(2):hover) button:nth-child(-n+2),
+.stars:has(button:nth-child(3):hover) button:nth-child(-n+3), .stars:has(button:nth-child(4):hover) button:nth-child(-n+4),
+.stars:has(button:nth-child(5):hover) button:nth-child(-n+5) { background: var(--pop); color: var(--on-pop); }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.history-link { color: var(--link); font-weight: 700; font-size: .95rem; }
 .tonight .art { --u: min(1.24cqw, .64cqh); }
 .tonight .sticker { animation: land .7s var(--spring) backwards; }
 .tonight .s2 { animation-delay: .12s; }

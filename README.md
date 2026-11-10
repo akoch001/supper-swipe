@@ -34,13 +34,33 @@ On a dish's page, tapping an ingredient or a method step greys it out and strike
 
 "We're cooking this tonight" still does the bookkeeping (last cooked date, tried and tested, off the shortlist and Matches, a "cooked" count for the stats), then turns the dish's page into a kitchen view instead of going straight to the poster. The screen stays on while it is open (the Screen Wake Lock API, where the phone supports it), the ingredients and steps are bigger and tick off, and every time in the method ("roast for 30 to 40 minutes") becomes a button that starts a timer at the shorter time. Running timers stay in view at the top, named after the cooking word before the time and the step ("Roast · step 4"), and ring, buzz and show a message when they finish. A phone that locks may hold the ring until it is unlocked. Everything is kept on the phone (`supper-swipe-cook-session`, for 8 hours), so a reload keeps the timers. "Done cooking" ends it and shows the poster; "Tell someone" shows the poster at any time.
 
+## History
+
+"Your history" (top of All dishes, or `/history`) shows what the group has matched, chosen and cooked, newest first, each with a ✕ to delete it. Above the timeline it works out:
+
+- **Hits**: how many times each dish was made, the usual gap between times ("usually every 3 weeks"), when you last had it and its average rating.
+- **Picked a lot, never made**: swiped right 3 or more times but never cooked.
+- **Always skipped**: swiped left 5 or more times and never right. A hint to delete it.
+
+Events are one blob each, `history/<day>/<matched|chosen|cooked>/<dish>`, so the same thing twice in a day counts once. Matches are logged when the second like lands; "chosen" when someone presses "We're cooking this tonight". The first time a group opens its history, each dish's old "last cooked" date is copied in as a cooked event marked "from before history". Deleting a chosen or cooked event puts the dish's last cooked date back to the latest one left.
+
+Swipes are not logged one by one (too much noise). Each phone counts rights and lefts per dish and sends them with its usage batch; the group keeps one blob, `swipes/per-dish`, with a running total and the last right swipe.
+
+### How was it?
+
+The next time anyone in the group opens the app, at least 3 hours after a dish was chosen (and within a week), it asks "How was the …?". A star rating saves the dish's rating and logs it as cooked; "We didn't make it after all" takes the chosen entry off the history; "Ask me later" asks again next time the app is opened. Whoever answers first answers for both.
+
+### Later: predictions (v2)
+
+The history is built so it can suggest dinners: "you usually have this every 3 weeks, it's been 5", dishes that are due, or a quiet nudge on the deck. Not built yet; it needs a few months of history first.
+
 ## How it looks
 
 Each dish is a poster in the colour of its main ingredient (pink for dishes still to try), with a plate of up to three emoji. `plate()` in `app.js` picks them: first the foods the dish's name mentions, then its main ingredients. The colours, fonts and motion are all in `styles.css`; `prefers-reduced-motion` turns the motion off. Choosing "We're cooking this tonight" shows the dish as a full-screen poster that can be shared.
 
 `icons/icon.svg` is the home-screen icon. The two PNGs are that file rendered at 192 and 512 pixels.
 
-The site sits behind Netlify's site-wide password, which also covers `/api`. The API has no login of its own.
+The site has no password. The API has no login of its own: the group cookie (set by a group's link) decides which group's dishes, likes and history you see.
 
 ## Reading a recipe with AI
 

@@ -71,7 +71,7 @@
   </div>
 
   <div class="panel" id="panelAll" hidden>
-    <h2 class="panel-title">All dishes</h2>
+    <div class="panel-head"><h2 class="panel-title">All dishes</h2><a class="history-link" href="/history">Your history</a></div>
     <div class="search">
       <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
       <input id="search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search dishes or ingredients" aria-label="Search dishes and ingredients">
@@ -152,6 +152,18 @@
 </div>
 
 <div class="tonight" id="tonight" role="dialog" aria-modal="true" aria-label="Tonight's dinner" hidden></div>
+
+<div class="who how" id="how" role="dialog" aria-modal="true" aria-labelledby="howTitle" hidden>
+  <div class="who-in">
+    <h2 id="howTitle">How was it?</h2>
+    <p id="howWhen"></p>
+    <div class="stars" role="group" aria-label="How much you liked it, out of 5">
+      <button type="button" data-stars="1" aria-label="1 out of 5">★</button><button type="button" data-stars="2" aria-label="2 out of 5">★</button><button type="button" data-stars="3" aria-label="3 out of 5">★</button><button type="button" data-stars="4" aria-label="4 out of 5">★</button><button type="button" data-stars="5" aria-label="5 out of 5">★</button>
+    </div>
+    <button type="button" class="ghost" data-act="didnt">We didn't make it after all</button>
+    <button type="button" class="quiet" data-act="later">Ask me later</button>
+  </div>
+</div>
 
 <div class="who" id="who" role="dialog" aria-modal="true" aria-labelledby="whoTitle" hidden>
   <div class="who-in">
