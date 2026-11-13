@@ -89,6 +89,9 @@
   // AI reads this month, as the server counts them: { limit: 5, used: { adam: 2, laura: 0 } }.
   let reads = null;
   const stored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } };
+  // Cook tonight: the first swipe right opens that dish, ready to cook. Plan ahead: swipes right build the shortlist.
+  const GOAL_KEY = keyed('supper-swipe-goal');
+  let goal = stored(GOAL_KEY, 'plan') === 'tonight' ? 'tonight' : 'plan';
   let who = stored(WHO_KEY, null), seenMatches = stored(SEEN_KEY, []), likes = {}, likeSaves = 0, shortView = 'mine', ahConnected = false;
   let badgeCount = shortlist.length, flying = false, closing = false, dragY = 0, sending = false, writes = 0, formRun = 0;
   const pending = new Map();
@@ -227,7 +230,7 @@
     const badges = (r.tried ? '' : '<span class="badge new">' + ic('sparkle') + 'Try something new</span>') + (r.lexi ? '<span class="badge">Kid friendly</span>' : '');
     const kicker = headline(r).join(' · ');
     return '<article class="card ' + colourOf(r) + ' ' + variant(id) + '" data-id="' + esc(id) + '">' + art(r) +
-      '<span class="stamp yes" aria-hidden="true">Shortlist</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
+      '<span class="stamp yes" aria-hidden="true">' + (goal === 'tonight' ? 'Tonight' : 'Shortlist') + '</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
       '<div class="card-top">' + badges + '</div>' +
       '<div class="card-body">' +
       (kicker ? '<p class="kicker">' + esc(kicker) + '</p>' : '') +
@@ -264,6 +267,9 @@
   }
 
   function renderFilter() {
+    $('goalTonight').setAttribute('aria-pressed', String(goal === 'tonight'));
+    $('goalPlan').setAttribute('aria-pressed', String(goal === 'plan'));
+    $('yesLabel').textContent = goal === 'tonight' ? 'Cook this' : 'Shortlist';
     $('modeAll').setAttribute('aria-pressed', String(mode === 'all'));
     $('modeHave').setAttribute('aria-pressed', String(mode === 'have'));
     const chips = $('chips');
@@ -1006,19 +1012,22 @@
     count('swipes');
     const seen = unsent.dishes[id] || (unsent.dishes[id] = { right: 0, left: 0 });
     seen[dir > 0 ? 'right' : 'left']++;
-    if (dir > 0 && !shortlist.includes(id)) {
+    const tonight = dir > 0 && goal === 'tonight';
+    if (dir > 0 && !tonight && !shortlist.includes(id)) {
       shortlist.push(id);
       saveShortlist();
       like(id);
     }
-    if (recipes.has(id)) say(recipes.get(id).title + (dir > 0 ? ' is on your shortlist' : ': not tonight'));
+    if (recipes.has(id)) say(recipes.get(id).title + (tonight ? '' : dir > 0 ? ' is on your shortlist' : ': not tonight'));
     render();
     // The cards underneath carry on rising from wherever the drag left them.
     if (canAnimate) {
       stack.style.setProperty('--from', risen.toFixed(3));
       stack.classList.add('advance');
     }
-    if (dir > 0 && !queue.length) setTab('short');
+    // The dish's page opens once the card has flown off; "We're cooking this tonight" is the next tap.
+    if (tonight) setTimeout(() => { if (recipes.has(id) && !openId) openRecipe(id); }, canAnimate ? 300 : 0);
+    else if (dir > 0 && !queue.length) setTab('short');
   }
 
   function bindTop(card) {
@@ -1203,6 +1212,9 @@
     render();
   }
 
+  const setGoal = g => { goal = g; store(GOAL_KEY, g); render(); };
+  $('goalTonight').addEventListener('click', () => setGoal('tonight'));
+  $('goalPlan').addEventListener('click', () => setGoal('plan'));
   $('modeAll').addEventListener('click', () => setMode('all'));
   $('modeHave').addEventListener('click', () => setMode('have'));
   $('chips').addEventListener('click', e => {

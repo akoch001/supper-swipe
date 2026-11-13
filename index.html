@@ -50,6 +50,10 @@
 
   <div class="panel" id="panelSwipe">
     <section class="filter" aria-label="Filter dishes">
+      <div class="seg goal" aria-label="What are you choosing for?">
+        <button type="button" id="goalTonight" aria-pressed="false">Cook tonight</button>
+        <button type="button" id="goalPlan" aria-pressed="true">Plan ahead</button>
+      </div>
       <div class="seg">
         <button type="button" id="modeAll" aria-pressed="true">Everything</button>
         <button type="button" id="modeHave" aria-pressed="false">What we have</button>
@@ -66,7 +70,7 @@
     <div class="actions">
       <button type="button" class="back" id="backBtn" aria-label="Back to the previous dish"><svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg></button>
       <button type="button" class="no" id="noBtn"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>Not tonight</button>
-      <button type="button" class="yes" id="yesBtn"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg>Shortlist</button>
+      <button type="button" class="yes" id="yesBtn"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg><span id="yesLabel">Shortlist</span></button>
     </div>
   </div>
 
