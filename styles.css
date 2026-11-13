@@ -84,6 +84,7 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; border-radius: 15px; background: var(--seg); }
 .seg button { border: 0; background: none; border-radius: 12px; min-height: 38px; padding: 6px 8px; font-size: .93rem; font-weight: 700; line-height: 1.15; color: var(--muted); transition: background-color .18s, color .18s, box-shadow .18s; }
 .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--fg); box-shadow: 0 1px 3px rgba(var(--shadow), .2), 0 0 0 .5px rgba(var(--shadow), .08); }
+.seg.goal button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
 .filter { display: flex; flex-direction: column; gap: 8px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 122px; overflow-y: auto; padding: 1px; }
 .chip { position: relative; border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; min-height: 34px; padding: 4px 13px; font-size: .88rem; font-weight: 700; transition: background-color .16s, color .16s, border-color .16s, transform .14s var(--out); }
@@ -168,7 +169,11 @@ svg.ic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor
 
 .card-top { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px 16px 0; max-width: 52%; }
 .badge { display: inline-flex; align-items: center; gap: 5px; font: 800 .68rem/1 var(--body); letter-spacing: .07em; text-transform: uppercase; padding: 7px 10px; border-radius: 999px; background: var(--ink); color: var(--card2); }
-.badge.new { background: var(--ink); color: var(--card); }
+.badge.new { position: relative; overflow: hidden; white-space: nowrap; margin: 2px 0 4px 2px; padding: 10px 14px 10px 11px; font-size: .84rem; background: #fff06a; color: #2d0719; rotate: -4deg; box-shadow: 0 0 0 2.5px #2d0719, 0 8px 18px rgba(45, 7, 25, .35); }
+.badge.new svg.ic { width: 17px; height: 17px; fill: currentColor; stroke-width: 1.6; }
+.badge.new::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .85) 50%, transparent 65%); translate: -100% 0; }
+.stack > .card:last-child .badge.new { animation: new-float 1.5s ease-in-out infinite alternate; }
+.stack > .card:last-child .badge.new::after { animation: new-shine 2.8s ease-in-out infinite; }
 .card-body { position: relative; margin-top: auto; padding: 0 18px 16px; display: flex; flex-direction: column; gap: 9px; }
 .kicker { margin: 0; font: 800 .7rem/1.25 var(--body); letter-spacing: .1em; text-transform: uppercase; opacity: .92; }
 .card h2 { margin: 0; font: 800 clamp(1.5rem, 10cqw, 3.1rem)/.97 var(--display); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -.025em; text-wrap: balance; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: .08em; }
@@ -425,6 +430,8 @@ details summary { min-height: 44px; display: flex; align-items: center; font-wei
 @keyframes panel-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(.92); } }
 @keyframes bump { 30% { transform: scale(1.45); } }
+@keyframes new-float { from { transform: translateY(0) scale(1); } to { transform: translateY(-3px) scale(1.05); } }
+@keyframes new-shine { 0%, 55% { translate: -100% 0; } 100% { translate: 100% 0; } }
 @keyframes bob { to { transform: translateY(-1.6cqw) rotate(3deg); } }
 @keyframes wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 @keyframes fade-in { from { opacity: 0; } }
