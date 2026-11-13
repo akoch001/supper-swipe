@@ -224,7 +224,7 @@
   function cardHTML(id) {
     const r = recipes.get(id), title = String(r.title || '');
     const size = title.length > 50 ? ' class="xlong"' : title.length > 34 ? ' class="long"' : '';
-    const badges = (r.tried ? '' : '<span class="badge new">Try something new</span>') + (r.lexi ? '<span class="badge">Kid friendly</span>' : '');
+    const badges = (r.tried ? '' : '<span class="badge new">' + ic('sparkle') + 'Try something new</span>') + (r.lexi ? '<span class="badge">Kid friendly</span>' : '');
     const kicker = headline(r).join(' · ');
     return '<article class="card ' + colourOf(r) + ' ' + variant(id) + '" data-id="' + esc(id) + '">' + art(r) +
       '<span class="stamp yes" aria-hidden="true">Shortlist</span><span class="stamp no" aria-hidden="true">Not tonight</span>' +
