@@ -9,7 +9,7 @@ Swipe through the dinners we like, filter by what's in the kitchen, and keep the
 
 ## Cook tonight or plan ahead
 
-The switch above the deck says what the swiping is for, and each phone remembers its choice. "Plan ahead" is the shortlist: every swipe right is kept and shared for a match. "Cook tonight" stops at the first swipe right and opens that dish, with "We're cooking this tonight" as the next tap; it adds nothing to the shortlist and does not wait for a match.
+The switch above the deck says what the swiping is for, and each phone remembers its choice. "Plan ahead" is the shortlist: every swipe right is kept and shared for a match. "Cook tonight" stops at the first swipe right and opens that dish, with "We're cooking this tonight" as the next tap; it adds nothing to the shortlist and does not wait for a match. Its deck includes the dishes already on the shortlist; Plan ahead leaves those out.
 
 ## Starting ease score
 

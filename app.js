@@ -211,16 +211,18 @@
     }
     return out;
   }
+  // Planning skips what is already on the shortlist. Tonight, those are as likely a choice as any.
+  const dealt = id => goal === 'tonight' || !shortlist.includes(id);
   function rebuildDeck() {
-    queue = deal([...recipes.keys()].filter(id => matches(recipes.get(id)) && !shortlist.includes(id)));
+    queue = deal([...recipes.keys()].filter(id => matches(recipes.get(id)) && dealt(id)));
     passed = [];
   }
   function syncDeck() {
     shortlist = shortlist.filter(id => recipes.has(id));
-    queue = queue.filter(id => recipes.has(id) && matches(recipes.get(id)) && !shortlist.includes(id));
+    queue = queue.filter(id => recipes.has(id) && matches(recipes.get(id)) && dealt(id));
     passed = passed.filter(id => recipes.has(id) && matches(recipes.get(id)));
     for (const id of recipes.keys()) {
-      if (matches(recipes.get(id)) && !queue.includes(id) && !passed.includes(id) && !shortlist.includes(id)) queue.push(id);
+      if (matches(recipes.get(id)) && !queue.includes(id) && !passed.includes(id) && dealt(id)) queue.push(id);
     }
   }
 
@@ -1212,7 +1214,7 @@
     render();
   }
 
-  const setGoal = g => { goal = g; store(GOAL_KEY, g); render(); };
+  const setGoal = g => { goal = g; store(GOAL_KEY, g); rebuildDeck(); render(); };
   $('goalTonight').addEventListener('click', () => setGoal('tonight'));
   $('goalPlan').addEventListener('click', () => setGoal('plan'));
   $('modeAll').addEventListener('click', () => setMode('all'));
@@ -1246,10 +1248,11 @@
   $('backBtn').addEventListener('click', () => {
     if (dragging || !passed.length) return;
     const id = passed.pop();
-    const side = shortlist.includes(id) ? 1 : -1;
+    // Tonight's swipes never touch the shortlist, so going back leaves it alone too.
+    const side = goal !== 'tonight' && shortlist.includes(id) ? 1 : -1;
     if (side > 0) unlike(id, true);
     queue.unshift(id);
-    shortlist = shortlist.filter(x => x !== id);
+    if (side > 0) shortlist = shortlist.filter(x => x !== id);
     saveShortlist();
     render();
     const card = $('stack').lastElementChild;
